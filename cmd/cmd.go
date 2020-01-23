@@ -3,6 +3,6 @@ package cmd
 import "io"
 
 var (
-        Out io.Writer
-        Err io.Writer
+	Out io.Writer
+	Err io.Writer
 )

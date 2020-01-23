@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
 	"errors"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"os"
 
-	"database/sql"
 	"ct/config"
+	"database/sql"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

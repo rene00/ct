@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"os"
 	"bufio"
-	"fmt"
-	"time"
-	"strings"
-	"errors"
 	"database/sql"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"time"
 )
 
 // Insert the metric into the metric table.
@@ -85,7 +85,6 @@ func getValueFromConsole(value, valueText string) (string, error) {
 	return value, nil
 }
 
-
 // Check if string exists in slice.
 func stringInSlice(str string, slice []string) bool {
 	exists := false
@@ -112,7 +111,6 @@ func getMetricConfig(db *sql.DB, metric Metric) (MetricConfig, error) {
 		return metricConfig, err
 	}
 	defer rows.Close()
-
 
 	for rows.Next() {
 		var option string

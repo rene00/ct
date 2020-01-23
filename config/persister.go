@@ -13,8 +13,8 @@ type Persister interface {
 
 // FilePersister saves viper configs to the file system.
 type FilePersister struct {
-	Dir		string
-	ConfigFilePath	string
+	Dir            string
+	ConfigFilePath string
 }
 
 // Save writes the viper config to the target location on the filesystem.

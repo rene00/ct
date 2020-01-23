@@ -1,6 +1,5 @@
 package cmd
 
-
 import (
 	"testing"
 )
@@ -17,4 +16,3 @@ func TestParseTimestamp(t *testing.T) {
 		}
 	}
 }
-

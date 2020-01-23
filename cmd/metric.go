@@ -1,9 +1,9 @@
 package cmd
 
 type Metric struct {
-	ID	int
-	Name	string
-	Config	MetricConfig
+	ID     int
+	Name   string
+	Config MetricConfig
 }
 
 type MetricConfig struct {

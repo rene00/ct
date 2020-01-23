@@ -1,14 +1,14 @@
 package cmd
 
 import (
+	"ct/config"
+	"database/sql"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"ct/config"
-	"testing"
 	"io/ioutil"
-	"path/filepath"
-	"database/sql"
 	"os"
+	"path/filepath"
+	"testing"
 )
 
 func TestRunInitCmd(t *testing.T) {
@@ -19,7 +19,7 @@ func TestRunInitCmd(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	cfg := config.Config{
-		Persister: config.InMemoryPersister{},
+		Persister:       config.InMemoryPersister{},
 		UserViperConfig: viper.New(),
 	}
 
@@ -42,4 +42,3 @@ func TestRunInitCmd(t *testing.T) {
 		t.Error(err.Error())
 	}
 }
-

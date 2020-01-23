@@ -12,14 +12,14 @@ import (
 )
 
 type reportCmdContext struct {
-	flags	*pflag.FlagSet
-	usrCfg	*viper.Viper
-	DB	*sql.DB
+	flags  *pflag.FlagSet
+	usrCfg *viper.Viper
+	DB     *sql.DB
 }
 
 func newReportCmdContext(usrCfg *viper.Viper, flags *pflag.FlagSet) *reportCmdContext {
 	return &reportCmdContext{
-		flags: flags,
+		flags:  flags,
 		usrCfg: usrCfg,
 	}
 }

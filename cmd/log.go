@@ -1,16 +1,16 @@
 package cmd
 
 import (
-	"errors"
 	"ct/config"
 	"database/sql"
-	"strconv"
+	"errors"
 	"fmt"
-	"time"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"os"
+	"strconv"
+	"time"
 )
 
 var logCmd = &cobra.Command{
@@ -87,7 +87,6 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 	if metric.Config.Frequency == "daily" {
 		var count int
 
-
 		sqlStmt = `
 		SELECT COUNT(1)
 			FROM ct
@@ -109,7 +108,6 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 			return nil
 		}
 	}
-
 
 	switch metric.Config.DataType {
 	case "int":

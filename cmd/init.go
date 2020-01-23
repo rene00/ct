@@ -7,8 +7,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"path/filepath"
 	"os"
+	"path/filepath"
 )
 
 var initCmd = &cobra.Command{
