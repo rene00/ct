@@ -80,7 +80,7 @@ func getValueFromConsole(value, valueText string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return value, nil
+		return userInput, nil
 	}
 	return value, nil
 }
