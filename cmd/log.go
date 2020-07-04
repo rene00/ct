@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"os"
 	"strconv"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var logCmd = &cobra.Command{
@@ -92,7 +93,7 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 			FROM ct
 			WHERE metric_id = ?
 			AND
-			timestamp >= datetime(?, '-1 day')
+			timestamp == ?
 		`
 		stmt, err := db.Prepare(sqlStmt)
 		if err != nil {
