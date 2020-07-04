@@ -136,6 +136,13 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 	return nil
 }
 
+func initDumpCmd() {
+	c := dumpCmd
+	f := c.Flags()
+	f.String("config-file", "", "")
+}
+
 func init() {
+	initDumpCmd()
 	rootCmd.AddCommand(dumpCmd)
 }
