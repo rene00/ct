@@ -42,7 +42,7 @@ tests: build
 .PHONY: integration-tests
 integration-tests: clean build
 	@echo "+ $@"
-	time bats -t tests/integration/*.bats
+	bats -t tests/integration/*.bats
 
 .PHONY: all-tests
 all-tests: clean tests integration-tests

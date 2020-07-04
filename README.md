@@ -48,3 +48,9 @@ Log a metric without passing the value param and be prompted with the value-text
 $ ct log --metric weight
 whats your weight? 
 ```
+
+Dump your data to json:
+
+```bash
+$ ct dump
+```

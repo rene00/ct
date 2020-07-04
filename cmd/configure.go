@@ -3,11 +3,14 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"os"
 
+	_ "github.com/mattn/go-sqlite3"
+
 	"ct/config"
+	"ct/internal/storage"
 	"database/sql"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -62,36 +65,12 @@ func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
 
 	frequency, _ := flags.GetString("frequency")
 	if frequency != "" {
-		supportedFrequency := stringInSlice(frequency, supportedFrequencies)
-		if !supportedFrequency {
+		if ok := stringInSlice(frequency, supportedFrequencies); !ok {
 			return errors.New("Frequency not supported")
 		}
-		sqlStmt = `
-		INSERT INTO config
-			(
-				metric_id,
-				opt,
-				val
-			)
-			VALUES
-			(
-				?,
-				"frequency",
-				?
-			)
-			ON CONFLICT(metric_id, opt)
-			DO UPDATE SET val=?
-		`
-		stmt, err := db.Prepare(sqlStmt)
-		if err != nil {
+		if err := storage.UpsertConfig(db, metricID, "frequency", frequency); err != nil {
 			return err
 		}
-		defer stmt.Close()
-
-		if _, err = stmt.Exec(metricID, frequency, frequency); err != nil {
-			return err
-		}
-
 	}
 
 	valueText, _ := flags.GetString("value-text")

@@ -77,6 +77,8 @@ func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
+
 	for rows.Next() {
 		var timestamp string
 		var value string
@@ -84,6 +86,11 @@ func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error
 			return err
 		}
 		fmt.Println(timestamp, metric.Name, value)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 
 	return nil
