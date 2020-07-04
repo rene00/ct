@@ -4,11 +4,12 @@ import (
 	"ct/config"
 	"database/sql"
 	"fmt"
+	"os"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"os"
 )
 
 type reportCmdContext struct {
@@ -65,10 +66,11 @@ func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error
 	}
 
 	sqlStmt = `
-	SELECT timestamp, value
+	SELECT strftime("%Y-%m-%d", timestamp), value
 		FROM ct
 		WHERE metric_id = ?
 		ORDER BY timestamp
+		DESC
 	`
 
 	rows, err := db.Query(sqlStmt, metricID)
