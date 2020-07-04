@@ -80,11 +80,6 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		return err
 	}
 
-	value, err = getValueFromConsole(value, metric.Config.ValueText)
-	if err != nil {
-		return err
-	}
-
 	if metric.Config.Frequency == "daily" {
 		var count int
 
@@ -108,6 +103,11 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 			}
 			return nil
 		}
+	}
+
+	value, err = getValueFromConsole(value, metric.Config.ValueText)
+	if err != nil {
+		return err
 	}
 
 	switch metric.Config.DataType {
