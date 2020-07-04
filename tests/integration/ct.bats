@@ -80,10 +80,16 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
+	run ./ct configure --config-file "${CONFIG_FILE}" --metric test --value-text "foo"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
 	run ./ct dump --config-file "${CONFIG_FILE}" 
     [ $status -eq 0 ]
+	printf '%s\n' 'output: ' "${output}" >&2
     [ $(echo "${output}" | jq -r .[].metric_name) == "test" ]
     [ $(echo "${output}" | jq -r .[].metric_config.frequency) == "daily" ]
+    [ $(echo "${output}" | jq -r .[].metric_config.value_text) == "foo" ]
 
 	run ./ct log --config-file "${CONFIG_FILE}" --metric test --value 1
 	printf '%s\n' 'output: ' "${output}" >&2

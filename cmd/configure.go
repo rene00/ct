@@ -32,8 +32,6 @@ var configureCmd = &cobra.Command{
 }
 
 func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
-	var sqlStmt string
-
 	usrCfg := cfg.UserViperConfig
 	dbFile := usrCfg.GetString("ct.db_file")
 	if dbFile == "" {
@@ -75,29 +73,7 @@ func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
 
 	valueText, _ := flags.GetString("value-text")
 	if valueText != "" {
-		sqlStmt = `
-		INSERT INTO config
-			(
-				metric_id,
-				opt,
-				val
-			)
-			VALUES
-			(
-				?,
-				"value_text",
-				?
-			)
-			ON CONFLICT(metric_id, opt)
-			DO UPDATE SET val=?
-		`
-		stmt, err := db.Prepare(sqlStmt)
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-
-		if _, err = stmt.Exec(metricID, valueText, valueText); err != nil {
+		if err := storage.UpsertConfig(db, metricID, "value_text", valueText); err != nil {
 			return err
 		}
 	}
@@ -108,33 +84,10 @@ func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
 	}
 	dataType, _ := flags.GetString("data-type")
 	if dataType != "" {
-		supportedDataType := stringInSlice(dataType, supportedDataTypes)
-		if !supportedDataType {
+		if ok := stringInSlice(dataType, supportedDataTypes); !ok {
 			return errors.New("Data type not supported")
 		}
-		sqlStmt = `
-		INSERT INTO config
-			(
-				metric_id,
-				opt,
-				val
-			)
-			VALUES
-			(
-				?,
-				"data_type",
-				?
-			)
-			ON CONFLICT(metric_id, opt)
-			DO UPDATE SET val=?
-		`
-		stmt, err := db.Prepare(sqlStmt)
-		if err != nil {
-			return err
-		}
-		defer stmt.Close()
-
-		if _, err = stmt.Exec(metricID, dataType, dataType); err != nil {
+		if err := storage.UpsertConfig(db, metricID, "data_type", dataType); err != nil {
 			return err
 		}
 	}
