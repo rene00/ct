@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"ct/config"
+	"ct/internal/model"
+	"ct/internal/storage"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -30,7 +32,7 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 	var sqlStmt string
 
 	usrCfg := cfg.UserViperConfig
-	metric := Metric{}
+	metric := model.Metric{}
 
 	db, err := sql.Open("sqlite3", usrCfg.GetString("ct.db_file"))
 	if err != nil {
@@ -70,12 +72,12 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		return err
 	}
 
-	metric.ID, err = getMetricID(db, metric)
+	metric.ID, err = storage.GetMetricID(db, metric)
 	if err != nil {
 		return err
 	}
 
-	metric.Config, err = getMetricConfig(db, metric)
+	metric.Config, err = storage.GetMetricConfig(db, metric)
 	if err != nil {
 		return err
 	}

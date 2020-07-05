@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"ct/config"
+	"ct/internal/model"
+	"ct/internal/storage"
 	"database/sql"
 	"fmt"
 	"os"
@@ -53,14 +55,14 @@ func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error
 		return err
 	}
 
-	metric := Metric{Name: metricName}
+	metric := model.Metric{Name: metricName}
 
-	metricID, err := getMetricID(db, metric)
+	metricID, err := storage.GetMetricID(db, metric)
 	if err != nil {
 		return err
 	}
 
-	metric.Config, err = getMetricConfig(db, metric)
+	metric.Config, err = storage.GetMetricConfig(db, metric)
 	if err != nil {
 		return err
 	}
