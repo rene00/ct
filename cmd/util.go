@@ -80,6 +80,9 @@ func getValueFromConsole(value, valueText string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		if userInput == "" {
+			return "", errors.New("No user input")
+		}
 		return userInput, nil
 	}
 	return value, nil
