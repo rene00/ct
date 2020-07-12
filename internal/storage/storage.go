@@ -4,47 +4,9 @@ import (
 	"ct/internal/model"
 	"database/sql"
 	"errors"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
-
-type ReportMonth struct {
-	// The month.
-	Month time.Time `json:"month"`
-
-	// The metric name.
-	Metric string `json:"metric_name"`
-
-	// The monthly value.
-	Value float64 `json:"metric_value"`
-}
-
-// ReportLastYear produces a report for all metrics for the last year.
-func ReportLastYear(db *sql.DB) error {
-	sqlStmt := `
-	SELECT id, name
-	FROM metric
-`
-	rows, err := db.Query(sqlStmt)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	metrics := []model.Metric{}
-
-	for rows.Next() {
-		var id int
-		var name string
-		if err := rows.Scan(&id, &name); err != nil {
-			return err
-		}
-		metric := model.Metric{ID: id, Name: name}
-		metrics = append(metrics, metric)
-	}
-	return nil
-}
 
 func UpsertConfig(db *sql.DB, metricID int, opt, val string) error {
 	sqlStmt := `
@@ -100,6 +62,32 @@ func SetMetricID(db *sql.DB, metric model.Metric) error {
 		return err
 	}
 	return nil
+}
+
+func GetMetric(db *sql.DB, metricName string) (*model.Metric, error) {
+	getMetricSQL := `
+	SELECT id, name
+	FROM metric
+	WHERE name = ?
+`
+	stmt, err := db.Prepare(getMetricSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	var id int
+	var name string
+	if err := stmt.QueryRow(metricName).Scan(&id, &name); err != nil {
+		return nil, err
+	}
+
+	metric := &model.Metric{ID: id, Name: name}
+	if metric.Config, err = GetMetricConfig(db, *metric); err != nil {
+		return nil, err
+	}
+
+	return metric, nil
 }
 
 // GetMetricID will call setMetricID to create the metric within the table and then call itself to return the metric ID.

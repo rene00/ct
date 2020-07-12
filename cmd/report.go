@@ -2,8 +2,7 @@ package cmd
 
 import (
 	"ct/config"
-	"ct/internal/model"
-	"ct/internal/storage"
+	"ct/internal/report"
 	"database/sql"
 	"fmt"
 	"os"
@@ -40,7 +39,6 @@ var reportCmd = &cobra.Command{
 }
 
 func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
-	var sqlStmt string
 
 	usrCfg := cfg.UserViperConfig
 
@@ -50,49 +48,22 @@ func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error
 	}
 	defer db.Close()
 
-	metricName, err := flags.GetString("metric")
+	reportType, err := flags.GetString("report-type")
 	if err != nil {
 		return err
 	}
 
-	metric := model.Metric{Name: metricName}
-
-	metricID, err := storage.GetMetricID(db, metric)
-	if err != nil {
-		return err
-	}
-
-	metric.Config, err = storage.GetMetricConfig(db, metric)
-	if err != nil {
-		return err
-	}
-
-	sqlStmt = `
-	SELECT strftime("%Y-%m-%d", timestamp), value
-		FROM ct
-		WHERE metric_id = ?
-		ORDER BY timestamp
-		DESC
-	`
-
-	rows, err := db.Query(sqlStmt, metricID)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var timestamp string
-		var value string
-		if err := rows.Scan(&timestamp, &value); err != nil {
+	switch rt := reportType; rt {
+	case "monthly-average":
+		if err = report.MonthlyAverage(db, flags); err != nil {
 			return err
 		}
-		fmt.Println(timestamp, metric.Name, value)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return err
+	case "all":
+		if err = report.All(db, flags); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("report type %s not supported", rt)
 	}
 
 	return nil
@@ -101,8 +72,9 @@ func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error
 func initReportCmd() {
 	c := reportCmd
 	f := c.Flags()
-	f.String("metric", "", "Metric")
-	c.MarkFlagRequired("metric")
+	f.String("report-type", "", "Report type")
+	c.MarkFlagRequired("report-type")
+	f.StringSlice("metrics", []string{}, "Metrics")
 	f.String("config-file", "", "")
 }
 
