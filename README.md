@@ -25,9 +25,24 @@ $ ct log --metric weight --timestamp 2020-01-22 --value 90
 Report on weight:
 
 ```bash
-$ ct report --metric weight
-2020-01-22T00:00:00Z weight 90
-2020-01-23T00:00:00Z weight 100
+$ ct report --report-type=all
++----------------------+--------+-------+
+|      TIMESTAMP       |  NAME  | VALUE |
++----------------------+--------+-------+
+| 2020-01-22T00:00:00Z | weight |    90 |
+| 2020-01-23T00:00:00Z | weight |   100 |
++----------------------+--------+-------+
+```
+
+Produce a monthly average report on weight:
+
+```bash
+$ ct report --report-type=monthly-average
++---------+--------+-------+-------+
+|  MONTH  |  NAME  | VALUE | COUNT |
++---------+--------+-------+-------+
+| 2020-01 | weight |    95 |     2 |
++---------+--------+-------+-------+
 ```
 
 Configure metric to be set daily:
