@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"ct/config"
+	"ct/internal/model"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -37,7 +38,7 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 	}
 	defer db.Close()
 
-	metrics := []*Metric{}
+	metrics := []*model.Metric{}
 
 	sqlStmt = `SELECT id, name from metric`
 	rows, err := db.Query(sqlStmt)
@@ -53,7 +54,7 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		if err := rows.Scan(&id, &name); err != nil {
 			return err
 		}
-		metric := &Metric{ID: id, Name: name}
+		metric := &model.Metric{ID: id, Name: name}
 		metrics = append(metrics, metric)
 	}
 
@@ -70,7 +71,7 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		}
 		defer rows.Close()
 
-		metricConfig := MetricConfig{}
+		metricConfig := model.MetricConfig{}
 
 		for rows.Next() {
 			var opt string
@@ -109,7 +110,7 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 			var timestamp time.Time
 			var value float64
 
-			metricData := MetricData{}
+			metricData := model.MetricData{}
 
 			if err := rows.Scan(&timestamp, &value); err != nil {
 				return err

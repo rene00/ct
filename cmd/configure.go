@@ -8,6 +8,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"ct/config"
+	"ct/internal/model"
 	"ct/internal/storage"
 	"database/sql"
 
@@ -51,8 +52,8 @@ func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
 		return nil
 	}
 
-	metric := Metric{Name: metricName}
-	metricID, err := getMetricID(db, metric)
+	metric := model.Metric{Name: metricName}
+	metricID, err := storage.GetMetricID(db, metric)
 	if err != nil {
 		return err
 	}
