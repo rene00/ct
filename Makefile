@@ -26,8 +26,12 @@ $(NAME): ## Builds a static executable
 	@echo "+ $@"
 	CGO_ENABLED=1 go build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME)
 
+.PHONY: bin-data
+bin-data:
+	cd db/migrations && go-bindata -o migrations.go -pkg migrations -ignore migrations.go . && cd ../../
+
 .PHONY: build
-build: $(NAME)
+build: bin-data $(NAME)
 
 .PHONY: clean
 clean:
