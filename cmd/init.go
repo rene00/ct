@@ -2,13 +2,14 @@ package cmd
 
 import (
 	"ct/config"
-	"database/sql"
+	"ct/internal/storage"
 	"fmt"
+	"os"
+	"path/filepath"
+
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"os"
-	"path/filepath"
 )
 
 var initCmd = &cobra.Command{
@@ -23,13 +24,8 @@ var initCmd = &cobra.Command{
 	},
 }
 
-// The init command:
-// - creates the ct config file
-// - creates the sqlite db
+// runInitCmd creates the config file and initializes the database.
 func runInitCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
-
-	var sqlStmt string
-
 	dbFile, _ := flags.GetString("db-file")
 	if dbFile == "" {
 		dbFile = filepath.Join(cfg.Dir, "ct.db")
@@ -42,54 +38,8 @@ func runInitCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		return err
 	}
 
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	sqlStmt = `
-	CREATE TABLE
-		IF NOT EXISTS metric
-		(
-			id INTEGER NOT NULL PRIMARY KEY,
-			name text
-		)
-	`
-	if _, err := db.Exec(sqlStmt); err != nil {
-		return err
-	}
-
-	sqlStmt = `
-	CREATE TABLE
-		IF NOT EXISTS ct
-		(
-			id INTEGER NOT NULL PRIMARY KEY,
-			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-			metric_id INTEGER NOT NULL,
-			value int NOT NULL,
-			FOREIGN KEY(metric_id) REFERENCES metric(id)
-		)
-	`
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
-		return err
-	}
-
-	sqlStmt = `
-	CREATE TABLE
-		IF NOT EXISTS config 
-		(
-			metric_id INTEGER NOT NULL,
-			opt text NOT NULL,
-			val text NOT NULL,
-			UNIQUE(metric_id, opt)
-				ON CONFLICT REPLACE,
-			FOREIGN KEY(metric_id) REFERENCES metric(id)
-		)
-	`
-	_, err = db.Exec(sqlStmt)
-	if err != nil {
+	dbUrl := fmt.Sprintf("sqlite3://%s", dbFile)
+	if err := storage.DoMigrateDb(dbUrl); err != nil {
 		return err
 	}
 
