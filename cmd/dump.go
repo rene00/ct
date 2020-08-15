@@ -86,6 +86,8 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 				metricConfig.Frequency = val
 			case "value_text":
 				metricConfig.ValueText = val
+			case "data_type":
+				metricConfig.DataType = val
 			default:
 				return errors.New("Unsupported config option")
 			}
