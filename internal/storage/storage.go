@@ -4,8 +4,13 @@ import (
 	"ct/internal/model"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
+)
+
+var (
+	ErrNotFound = errors.New("Not Found")
 )
 
 func UpsertConfig(db *sql.DB, metricID int, opt, val string) error {
@@ -37,6 +42,57 @@ func UpsertConfig(db *sql.DB, metricID int, opt, val string) error {
 	return nil
 }
 
+func CreateMetric(db *sql.DB, metric model.Metric) (*int64, error) {
+	var sqlStmt string
+
+	sqlStmt = `
+	INSERT INTO metric (id, name)
+	VALUES (NULL, ?)
+	`
+	stmt, err := db.Prepare(sqlStmt)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	res, err := stmt.Exec(metric.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	metricID, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	config := metric.Config
+	dataType := config.DataType
+	switch config.DataType {
+	case "float":
+	case "int":
+	case "":
+		dataType = "float"
+	default:
+		return nil, fmt.Errorf("metric config datatype not supported: %s", config.DataType)
+	}
+
+	sqlStmt = `
+		INSERT INTO config (metric_id, opt, val)
+		VALUES (?, ?, ?)
+		`
+	stmt, err = db.Prepare(sqlStmt)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.Exec(metricID, "data_type", dataType); err != nil {
+		return nil, err
+	}
+
+	return &metricID, nil
+}
+
 // SetMetricID inserts the metric into the metric table.
 func SetMetricID(db *sql.DB, metric model.Metric) error {
 	var sqlStmt string
@@ -61,6 +117,7 @@ func SetMetricID(db *sql.DB, metric model.Metric) error {
 	if _, err = stmt.Exec(metric.Name); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -69,7 +126,7 @@ func GetMetric(db *sql.DB, metricName string) (*model.Metric, error) {
 	SELECT id, name
 	FROM metric
 	WHERE name = ?
-`
+	`
 	stmt, err := db.Prepare(getMetricSQL)
 	if err != nil {
 		return nil, err
@@ -78,8 +135,12 @@ func GetMetric(db *sql.DB, metricName string) (*model.Metric, error) {
 
 	var id int
 	var name string
-	if err := stmt.QueryRow(metricName).Scan(&id, &name); err != nil {
+	err = stmt.QueryRow(metricName).Scan(&id, &name)
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
+	}
+	if err != nil && err == sql.ErrNoRows {
+		return nil, ErrNotFound
 	}
 
 	metric := &model.Metric{ID: id, Name: name}

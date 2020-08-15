@@ -32,7 +32,6 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 	var sqlStmt string
 
 	usrCfg := cfg.UserViperConfig
-	metric := model.Metric{}
 
 	db, err := sql.Open("sqlite3", usrCfg.GetString("ct.db_file"))
 	if err != nil {
@@ -40,7 +39,8 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 	}
 	defer db.Close()
 
-	if metric.Name, err = flags.GetString("metric"); err != nil {
+	metricName, err := flags.GetString("metric")
+	if err != nil {
 		return err
 	}
 
@@ -72,14 +72,19 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		return err
 	}
 
-	metric.ID, err = storage.GetMetricID(db, metric)
-	if err != nil {
+	metric, err := storage.GetMetric(db, metricName)
+	if err != nil && err != storage.ErrNotFound {
 		return err
 	}
 
-	metric.Config, err = storage.GetMetricConfig(db, metric)
-	if err != nil {
-		return err
+	if err != nil && err == storage.ErrNotFound {
+		if _, err = storage.CreateMetric(db, model.Metric{Name: metricName}); err != nil {
+			return err
+		}
+		metric, err = storage.GetMetric(db, metricName)
+		if err != nil {
+			return err
+		}
 	}
 
 	if metric.Config.Frequency == "daily" {
