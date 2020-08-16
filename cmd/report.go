@@ -28,57 +28,125 @@ func newReportCmdContext(usrCfg *viper.Viper, flags *pflag.FlagSet) *reportCmdCo
 
 var reportCmd = &cobra.Command{
 	Use: "report [command]",
+}
+
+var reportAllCmd = &cobra.Command{
+	Use:   "all [command]",
+	Short: "run the all report",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("metrics", cmd.Flags().Lookup("metrics"))
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
-			return err
+			os.Exit(1)
 		}
-		return runReportCmd(cfg, cmd.Flags(), args)
+
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		if err = report.All(db, cmd.Flags()); err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+
+		return nil
 	},
 }
 
-func runReportCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
-
-	usrCfg := cfg.UserViperConfig
-
-	db, err := sql.Open("sqlite3", usrCfg.GetString("ct.db_file"))
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	reportType, err := flags.GetString("report-type")
-	if err != nil {
-		return err
-	}
-
-	switch rt := reportType; rt {
-	case "monthly-average":
-		if err = report.MonthlyAverage(db, flags); err != nil {
-			return err
+var reportStreakCmd = &cobra.Command{
+	Use:   "streak [command]",
+	Short: "run the streak report",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("metric", cmd.Flags().Lookup("metric"))
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.NewConfig(cmd.Flags())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
 		}
-	case "all":
-		if err = report.All(db, flags); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("report type %s not supported", rt)
-	}
 
-	return nil
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		if err = report.Streak(db, viper.GetString("metric")); err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+
+		return nil
+	},
 }
 
-func initReportCmd() {
-	c := reportCmd
+var reportMonthlyAverageCmd = &cobra.Command{
+	Use:   "monthly-average [command]",
+	Short: "run the monthly average report",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("metrics", cmd.Flags().Lookup("metrics"))
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.NewConfig(cmd.Flags())
+		if err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+		defer db.Close()
+
+		if err = report.MonthlyAverage(db, viper.GetStringSlice("metrics")); err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+
+		return nil
+	},
+}
+
+func initReportAllCmd() {
+	c := reportAllCmd
 	f := c.Flags()
-	f.String("report-type", "", "Report type")
-	c.MarkFlagRequired("report-type")
 	f.StringSlice("metrics", []string{}, "Metrics")
+	c.MarkFlagRequired("metrics")
+	f.String("config-file", "", "")
+}
+
+func initReportMonthlyAverageCmd() {
+	c := reportMonthlyAverageCmd
+	f := c.Flags()
+	f.StringSlice("metrics", []string{}, "Metrics")
+	c.MarkFlagRequired("metrics")
+	f.String("config-file", "", "")
+}
+
+func initReportStreakCmd() {
+	c := reportStreakCmd
+	f := c.Flags()
+	f.String("metric", "", "Metric")
+	c.MarkFlagRequired("metric")
 	f.String("config-file", "", "")
 }
 
 func init() {
-	initReportCmd()
+	initReportAllCmd()
+	initReportMonthlyAverageCmd()
+	initReportStreakCmd()
+	reportCmd.AddCommand(reportAllCmd)
+	reportCmd.AddCommand(reportMonthlyAverageCmd)
+	reportCmd.AddCommand(reportStreakCmd)
 	rootCmd.AddCommand(reportCmd)
 }
