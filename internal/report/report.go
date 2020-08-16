@@ -109,12 +109,8 @@ func stringInSlice(s string, sl []string) bool {
 	return false
 }
 
-func MonthlyAverage(db *sql.DB, flags *pflag.FlagSet) error {
-	metrics, err := flags.GetStringSlice("metrics")
-	if err != nil {
-		return err
-	}
-
+// FIXME: exclude bool metrics from this report.
+func MonthlyAverage(db *sql.DB, metrics []string) error {
 	sqlStmt := `
 	SELECT metric.name AS metric_name,
 	ROUND(AVG(ct.value), 2) AS metric_value,
@@ -172,6 +168,77 @@ func MonthlyAverage(db *sql.DB, flags *pflag.FlagSet) error {
 		table.Append(v)
 	}
 
+	table.Render()
+
+	return nil
+}
+
+func Streak(db *sql.DB, metricName string) error {
+	sqlStmt := `
+	SELECT 
+	metric.id AS metric_id,
+	ct.value AS metric_value,
+	ct.id AS ct_id
+	FROM ct
+	INNER JOIN metric 
+	ON metric.id = ct.metric_id
+	WHERE metric.name = ?
+	ORDER BY ct.timestamp
+	DESC
+	LIMIT 1
+	`
+
+	stmt, err := db.Prepare(sqlStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	var metricID int
+	var lastValue string
+	var ctID int
+	err = stmt.QueryRow(metricName).Scan(&metricID, &lastValue, &ctID)
+	if err != nil {
+		return err
+	}
+
+	// FIXME: This query will find all values for the metric and then walk back to tally up the streak. It will  skip a day if the metric does not exist. The code below should be updated to fill in the empty days when tallying up the streak.
+	sqlStmt = `
+	SELECT
+	value AS metric_value
+	FROM ct
+	WHERE metric_id = ?
+	AND id != ?
+	ORDER BY timestamp
+	ASC
+	`
+
+	stmt, err = db.Prepare(sqlStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(metricID, ctID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	streakTally := 1
+	for rows.Next() {
+		var i string
+		if err := rows.Scan(&i); err != nil {
+			return err
+		}
+		if i == lastValue {
+			streakTally++
+		}
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Current Streak"})
+	table.Append([]string{metricName, strconv.Itoa(streakTally)})
 	table.Render()
 
 	return nil

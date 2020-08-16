@@ -1,6 +1,6 @@
 # ct - a command line metric tracker
 
-ct is a personal project I created to track some basic metrics such as my body weight and daily walking distance.
+ct is a personal project I created to track some basic metrics daily, such as my body weight and walking distance.
 
 ## Usage
 

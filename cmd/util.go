@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -51,4 +52,24 @@ func parseTimestamp(timestamp string) (time.Time, error) {
 		return parsedTimestamp, err
 	}
 	return parsedTimestamp, nil
+}
+
+func getBoolFromValue(value string) (string, error) {
+	for k, v := range map[string][]string{
+		"0": []string{"n", "no"},
+		"1": []string{"y", "yes"},
+	} {
+		for _, i := range v {
+			if strings.ToLower(value) == i {
+				return k, nil
+			}
+		}
+	}
+
+	_, err := strconv.ParseBool(value)
+	if err != nil {
+		return "", fmt.Errorf("Value is not a bool")
+	}
+
+	return value, nil
 }

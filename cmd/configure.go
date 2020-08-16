@@ -82,6 +82,7 @@ func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
 	supportedDataTypes := []string{
 		"int",
 		"float",
+		"bool",
 	}
 	dataType, _ := flags.GetString("data-type")
 	if dataType != "" {
