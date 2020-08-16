@@ -92,10 +92,10 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 
 		sqlStmt = `
 		SELECT COUNT(1)
-			FROM ct
-			WHERE metric_id = ?
-			AND
-			timestamp == ?
+		FROM ct
+		WHERE metric_id = ?
+		AND
+		timestamp == ?
 		`
 		stmt, err := db.Prepare(sqlStmt)
 		if err != nil {
@@ -128,24 +128,20 @@ func runLogCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 		if err != nil {
 			return errors.New("Value not a float")
 		}
+	case "bool":
+		value, err = getBoolFromValue(value)
+		if err != nil {
+			return err
+		}
 	default:
+		return errors.New("Missing data_type for metric")
 	}
 
 	sqlStmt = `
 	INSERT INTO ct
-		(
-			id,
-			timestamp,
-			metric_id,
-			value
-		)
-		VALUES
-		(
-			NULL,
-			?,
-			?,
-			?
-		)
+	(id, timestamp, metric_id, value)
+	VALUES
+	(NULL, ?, ?, ?)
 	`
 	stmt, err := db.Prepare(sqlStmt)
 	if err != nil {

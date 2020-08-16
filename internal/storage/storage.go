@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"ct/internal/model"
 	"database/sql"
 	"errors"
@@ -45,17 +46,32 @@ func UpsertConfig(db *sql.DB, metricID int, opt, val string) error {
 func CreateMetric(db *sql.DB, metric model.Metric) (*int64, error) {
 	var sqlStmt string
 
+	ctx := context.Background()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			err = tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
+
 	sqlStmt = `
 	INSERT INTO metric (id, name)
 	VALUES (NULL, ?)
 	`
-	stmt, err := db.Prepare(sqlStmt)
+	stmt, err := tx.PrepareContext(ctx, sqlStmt)
 	if err != nil {
+		_ = tx.Rollback()
 		return nil, err
 	}
 	defer stmt.Close()
 
-	res, err := stmt.Exec(metric.Name)
+	res, err := stmt.ExecContext(ctx, metric.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -70,6 +86,7 @@ func CreateMetric(db *sql.DB, metric model.Metric) (*int64, error) {
 	switch config.DataType {
 	case "float":
 	case "int":
+	case "bool":
 	case "":
 		dataType = "float"
 	default:
@@ -77,16 +94,30 @@ func CreateMetric(db *sql.DB, metric model.Metric) (*int64, error) {
 	}
 
 	sqlStmt = `
-		INSERT INTO config (metric_id, opt, val)
-		VALUES (?, ?, ?)
-		`
-	stmt, err = db.Prepare(sqlStmt)
+	INSERT INTO config (metric_id, opt, val)
+	VALUES (?, ?, ?)
+	`
+	stmt, err = tx.Prepare(sqlStmt)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	if _, err = stmt.Exec(metricID, "data_type", dataType); err != nil {
+	if _, err = stmt.ExecContext(ctx, metricID, "data_type", dataType); err != nil {
+		return nil, err
+	}
+
+	sqlStmt = `
+	INSERT INTO config (metric_id, opt, val)
+	VALUES (?, "frequency", "daily")
+	`
+	stmt, err = tx.Prepare(sqlStmt)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	if _, err = stmt.ExecContext(ctx, metricID); err != nil {
 		return nil, err
 	}
 
