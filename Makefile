@@ -1,50 +1,41 @@
-NAME := ct
-PKG := $(NAME)
-VERSIONPKG := $(PKG)/pkg/version
+BIN := ct
+VERSION := $$(make -s show-version)
+CURRENT_REVISION := $(shell git rev-parse --short HEAD)
+BUILD_LDFLAGS := "-s -w -X main.revision=$(CURRENT_REVISION)"
+GOBIN ?= $(shell go env GOPATH)/bin
 
-# Set any default go build tags
-BUILDTAGS :=
+export GO111MODULE=on
 
-# Add to compile time flags
-GITCOMMIT := $(shell git rev-parse --short HEAD)
-GITUNTRACKEDCHANGES := $(shell git status --porcelain --untracked-files=no)
-BUILDTIME := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-ifneq ($(GITUNTRACKEDCHANGES),)
-	GITCOMMIT := $(GITCOMMIT)-dirty
-endif
-GITBRANCH = $(shell git rev-parse --verify --abbrev-ref HEAD)
-CTIMEVAR = -X '$(VERSIONPKG).commitSHA=$(GITCOMMIT)' \
-		   -X '$(VERSIONPKG).branch=$(GITBRANCH)' \
-		   -X '$(VERSIONPKG).date=$(BUILDTIME)'
-
-GO_LDFLAGS=-ldflags "-w $(CTIMEVAR)"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags -static"
-
-all: clean
-
-$(NAME): ## Builds a static executable
-	@echo "+ $@"
-	CGO_ENABLED=1 go build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME)
-
-.PHONY: bin-data
-bin-data:
-	cd db/migrations && go-bindata -o migrations.go -pkg migrations -ignore migrations.go . && cd ../../
+.PHONY: all
+all: clean build
 
 .PHONY: build
-build: bin-data $(NAME)
+build: bin-data
+	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) .
+
+$(GOBIN)/go-bindata:
+	cd && go get github.com/go-bindata/go-bindata/...
+
+.PHONY: bin-data
+bin-data: $(GOBIN)/go-bindata
+	cd db/migrations && go-bindata -o migrations.go -pkg migrations -ignore migrations.go . && cd ../../
 
 .PHONY: clean
 clean:
-	@echo "+ $@"
-	$(RM) $(NAME)
+	rm -rf $(BIN) goxz
+	go clean
+
+.PHONY: install
+install:
+	go install -ldflags=$(BUILD_LDFLAGS) .
 
 .PHONY: tests
-tests: build
+tests: clean build
 	@echo "+ $@"
-	go test ./... -cover
+	go test ./...
 
 .PHONY: integration-tests
-integration-tests: clean build
+integration-tests: clean install
 	@echo "+ $@"
 	bats -t tests/integration/*.bats
 
@@ -52,6 +43,32 @@ integration-tests: clean build
 all-tests: clean tests integration-tests
 	@echo "+ $@"
 
-.PHONY: help
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+$(GOBIN)/golint:
+	cd && go get golang.org/x/lint/golint
+
+$(GOBIN)/goxz:
+	cd && go get github.com/Songmu/goxz/cmd/goxz
+
+.PHONY: cross
+cross: $(GOBIN)/goxz
+	goxz -n $(BIN) -pv=v$(VERSION) -build-ldflags=$(BUILD_LDFLAGS) .
+
+PHONY: show-version
+show-version: $(GOBIN)/gobump
+	@gobump show -r .
+
+$(GOBIN)/gobump:
+	@cd && go get github.com/x-motemen/gobump/cmd/gobump
+
+.PHONY: lint
+lint: $(GOBIN)/golint
+	go vet .
+	golint -set_exit_status . cmd config internal/...
+
+
+.PHONY: upload
+upload: $(GOBIN)/ghr
+	ghr "v$(VERSION)" goxz
+
+$(GOBIN)/ghr:
+	cd && go get github.com/tcnksm/ghr 

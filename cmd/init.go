@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -32,14 +32,14 @@ var initCmd = &cobra.Command{
 		}
 
 		usrCfg := cfg.UserViperConfig
-		usrCfg.Set("ct", UserConfig{DbFile: dbFile})
+		usrCfg.Set("ct", userConfig{DbFile: dbFile})
 
 		if err := cfg.Save("ct"); err != nil {
 			return err
 		}
 
-		dbUrl := fmt.Sprintf("sqlite3://%s", dbFile)
-		if err := storage.DoMigrateDb(dbUrl); err != nil {
+		dbURL := fmt.Sprintf("sqlite3://%s", dbFile)
+		if err := storage.DoMigrateDb(dbURL); err != nil {
 			return err
 		}
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //nolint
 
 	"ct/config"
 	"ct/internal/model"
@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-type UserConfig struct {
+type userConfig struct {
 	DbFile string `json:"db_file"`
 }
 

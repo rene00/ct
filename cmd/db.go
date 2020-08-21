@@ -30,8 +30,8 @@ var dbMigrateCmd = &cobra.Command{
 		}
 		if viper.IsSet("run") {
 			usrCfg := cfg.UserViperConfig
-			dbUrl := fmt.Sprintf("sqlite3://%s", usrCfg.GetString("ct.db_file"))
-			if err = storage.DoMigrateDb(dbUrl); err != nil {
+			dbURL := fmt.Sprintf("sqlite3://%s", usrCfg.GetString("ct.db_file"))
+			if err = storage.DoMigrateDb(dbURL); err != nil {
 				fmt.Fprint(os.Stderr, fmt.Sprintf("%v\n", err))
 				os.Exit(1)
 			}

@@ -7,13 +7,15 @@ import (
 	"errors"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //nolint
 )
 
 var (
+	// ErrNotFound is row not found.
 	ErrNotFound = errors.New("Not Found")
 )
 
+// UpsertConfig inserts or updates a config row.
 func UpsertConfig(db *sql.DB, metricID int, opt, val string) error {
 	sqlStmt := `
 		INSERT INTO config
@@ -43,6 +45,7 @@ func UpsertConfig(db *sql.DB, metricID int, opt, val string) error {
 	return nil
 }
 
+// CreateMetric creates a metric row.
 func CreateMetric(db *sql.DB, metric model.Metric) (*int64, error) {
 	var sqlStmt string
 
@@ -152,6 +155,7 @@ func SetMetricID(db *sql.DB, metric model.Metric) error {
 	return nil
 }
 
+// GetMetric returns a metric row.
 func GetMetric(db *sql.DB, metricName string) (*model.Metric, error) {
 	getMetricSQL := `
 	SELECT id, name
@@ -209,6 +213,7 @@ func GetMetricID(db *sql.DB, metric model.Metric) (int, error) {
 	return metricID, nil
 }
 
+// GetMetricConfig returns the config for a metric.
 func GetMetricConfig(db *sql.DB, metric model.Metric) (model.MetricConfig, error) {
 	var sqlStmt string
 	metricConfig := model.MetricConfig{}
