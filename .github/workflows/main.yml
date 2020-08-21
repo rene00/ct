@@ -20,21 +20,17 @@ jobs:
       with:
         go-version: '1.15.0'
 
-    - name: install dependencies
-      run: |
-        go version
-        go get -u golang.org/x/lint/golint
+    - name: lint
+      run: make lint
 
-    - name: run vet & lint
-      run: |
-        go vet .
-        golint -set_exit_status . cmd config internal/...
+    - name: unit tests
+      run: make tests
 
-    - name: run tests
-      run: go test ./...
+    - name: integration tests
+      run: make integration-tests
 
     - name: build
       env:
         GOOS: linux
         GOARCH: amd64
-      run: make ct
+      run: make build
