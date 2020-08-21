@@ -28,9 +28,3 @@ jobs:
 
     - name: integration tests
       run: make integration-tests
-
-    - name: build
-      env:
-        GOOS: linux
-        GOARCH: amd64
-      run: make build
