@@ -26,10 +26,8 @@ jobs:
     - name: unit tests
       run: make tests
 
-    - name: Setup BATS
-      uses: mig4/setup-bats@master
-      with:
-        bats-version: 1.2.1
-
     - name: integration tests
-      run: make integration-tests
+      run: |
+      sudo apt-get update
+      sudo apt-get install bats
+      make integration-tests
