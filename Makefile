@@ -40,6 +40,10 @@ integration-tests: clean install
 all-tests: clean tests integration-tests
 	@echo "+ $@"
 
-.PHONY: help
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+$(GOBIN)/golint:
+	@cd && go get golang.org/x/lint/golint
+
+.PHONY: lint
+lint: $(GOBIN)/golint
+	go vet .
+	golint -set_exit_status . cmd config internal/...
