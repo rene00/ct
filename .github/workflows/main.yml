@@ -25,7 +25,7 @@ jobs:
     - name: run vet & lint
       run: |
         go vet .
-        golint -set_exit_status . cmd config internal 
+        golint -set_exit_status . cmd config internal/...
 
     - name: run tests
       run: go test ./...

@@ -30,6 +30,7 @@ func (p FilePersister) Save(v *viper.Viper, basename string) error {
 // InMemoryPersister is a noop persister for use in unit tests.
 type InMemoryPersister struct{}
 
+// Save exists so that InMemoryPersister satisfies Persister.
 func (p InMemoryPersister) Save(*viper.Viper, string) error {
 	return nil
 }

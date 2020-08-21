@@ -5,12 +5,12 @@ import (
 	"os"
 	"strconv"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/pflag"
 )
 
-type ReportAll struct {
+type reportAll struct {
 	// The metric name.
 	MetricName string `json:"metric_name"`
 
@@ -21,7 +21,7 @@ type ReportAll struct {
 	Timestamp string `json:"month"`
 }
 
-type ReportMonth struct {
+type reportMonth struct {
 	// The metric name.
 	MetricName string `json:"metric_name"`
 
@@ -35,6 +35,7 @@ type ReportMonth struct {
 	Month string `json:"month"`
 }
 
+// All prints the all report.
 func All(db *sql.DB, flags *pflag.FlagSet) error {
 	metrics, err := flags.GetStringSlice("metrics")
 	if err != nil {
@@ -56,7 +57,7 @@ func All(db *sql.DB, flags *pflag.FlagSet) error {
 	}
 	defer rows.Close()
 
-	report := []ReportAll{}
+	report := []reportAll{}
 
 	for rows.Next() {
 		var metricName string
@@ -65,15 +66,15 @@ func All(db *sql.DB, flags *pflag.FlagSet) error {
 		if err := rows.Scan(&metricName, &metricValue, &metricTimestamp); err != nil {
 			return err
 		}
-		reportAll := ReportAll{metricName, metricValue, metricTimestamp}
+		_reportAll := reportAll{metricName, metricValue, metricTimestamp}
 		if len(metrics) != 0 {
 			f := stringInSlice(metricName, metrics)
 			if f {
-				report = append(report, reportAll)
+				report = append(report, _reportAll)
 			}
 			continue
 		}
-		report = append(report, reportAll)
+		report = append(report, _reportAll)
 	}
 
 	err = rows.Err()
@@ -109,7 +110,8 @@ func stringInSlice(s string, sl []string) bool {
 	return false
 }
 
-// FIXME: exclude bool metrics from this report.
+// MonthlyAverage generates the monthly average report.
+// BUG(rene): exclude bool metrics from this report.
 func MonthlyAverage(db *sql.DB, metrics []string) error {
 	sqlStmt := `
 	SELECT metric.name AS metric_name,
@@ -128,7 +130,7 @@ func MonthlyAverage(db *sql.DB, metrics []string) error {
 	}
 	defer rows.Close()
 
-	report := []ReportMonth{}
+	report := []reportMonth{}
 
 	for rows.Next() {
 		var metricName string
@@ -138,15 +140,15 @@ func MonthlyAverage(db *sql.DB, metrics []string) error {
 		if err := rows.Scan(&metricName, &metricValue, &count, &month); err != nil {
 			return err
 		}
-		reportMonth := ReportMonth{metricName, metricValue, count, month}
+		_reportMonth := reportMonth{metricName, metricValue, count, month}
 		if len(metrics) != 0 {
 			f := stringInSlice(metricName, metrics)
 			if f {
-				report = append(report, reportMonth)
+				report = append(report, _reportMonth)
 			}
 			continue
 		}
-		report = append(report, reportMonth)
+		report = append(report, _reportMonth)
 	}
 
 	err = rows.Err()
@@ -173,6 +175,7 @@ func MonthlyAverage(db *sql.DB, metrics []string) error {
 	return nil
 }
 
+// Streak prints the streak report.
 func Streak(db *sql.DB, metricName string) error {
 	sqlStmt := `
 	SELECT 

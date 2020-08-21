@@ -4,13 +4,13 @@ import (
 	"ct/db/migrations"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3" //nolint
+	_ "github.com/golang-migrate/migrate/v4/source/file"      //nolint
 	bindata "github.com/golang-migrate/migrate/v4/source/go_bindata"
 )
 
 // DoMigrateDb performs DB migrations.
-func DoMigrateDb(dbUrl string) error {
+func DoMigrateDb(dbURL string) error {
 	resources := bindata.Resource(migrations.AssetNames(),
 		func(name string) ([]byte, error) {
 			return migrations.Asset(name)
@@ -21,7 +21,7 @@ func DoMigrateDb(dbUrl string) error {
 		return err
 	}
 
-	m, err := migrate.NewWithSourceInstance("go-bindata", migrationData, dbUrl)
+	m, err := migrate.NewWithSourceInstance("go-bindata", migrationData, dbURL)
 	if err != nil {
 		return err
 	}

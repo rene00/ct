@@ -1,7 +1,6 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -18,6 +17,7 @@ var (
 	viperConfig    *viper.Viper
 )
 
+// Config is the config for the application.
 type Config struct {
 	// The users Operating System.
 	OS string
@@ -31,6 +31,7 @@ type Config struct {
 	Persister       Persister
 }
 
+// NewConfig returns a Config.
 func NewConfig(flags *pflag.FlagSet) (*Config, error) {
 
 	dir := Dir()
@@ -43,8 +44,7 @@ func NewConfig(flags *pflag.FlagSet) (*Config, error) {
 			return nil, err
 		}
 		if fmt.Sprintf("%s", filepath.Ext(abs)) != fmt.Sprintf(".%s", configType) {
-			err = errors.New(fmt.Sprintf("File extension must be %s, %s", configType, configFile))
-			return nil, err
+			return nil, fmt.Errorf("File extension must be %s, %s", configType, configFile)
 		}
 		dir = filepath.Dir(abs)
 		configName = filepath.Base(abs)
@@ -67,6 +67,7 @@ func NewConfig(flags *pflag.FlagSet) (*Config, error) {
 	}, nil
 }
 
+// SetDefaultDirName sets DefaultDirName.
 func SetDefaultDirName(binaryName string) {
 	binaryNameBase := filepath.Base(binaryName)
 	// Rename binaryNameBase to ct when user runs cli via
@@ -77,6 +78,7 @@ func SetDefaultDirName(binaryName string) {
 	DefaultDirName = strings.Replace(binaryNameBase, ".exe", "", 1)
 }
 
+// Dir returns the config dir.
 func Dir() string {
 	var dir string
 	if runtime.GOOS == "windows" {
@@ -103,11 +105,7 @@ func Dir() string {
 	return dir
 }
 
+// Save saves the config.
 func (c Config) Save(basename string) error {
 	return c.Persister.Save(c.UserViperConfig, basename)
-}
-
-// Validates the users configuration file.
-func ValidateConfig(cfg *viper.Viper, flags *pflag.FlagSet) error {
-	return nil
 }
