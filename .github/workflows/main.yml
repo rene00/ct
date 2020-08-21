@@ -1,0 +1,31 @@
+name: ci
+on: [pull_request]
+
+jobs:
+  build:
+    name: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: setup go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.15.0'
+
+    - name: install dependencies
+      run: |
+        go version
+        go get -u golang.org/x/lint/golint
+
+    - name: run build
+      run: go build .
+
+    - name: run vet & lint
+      run: |
+        go vet .
+        golint . cmd config internal 
+
+    - name: run tests
+      run: go test ./...
