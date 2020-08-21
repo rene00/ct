@@ -1,50 +1,38 @@
 NAME := ct
-PKG := $(NAME)
-VERSIONPKG := $(PKG)/pkg/version
+VERSION := $$(make -s show-version)
+CURRENT_REVISION := $(shell git rev-parse --short HEAD)
+BUILD_LDFLAGS := "-s -w -X main.revision=$(CURRENT_REVISION)"
+GOBIN ?= $(shell go env GOPATH)/bin
 
-# Set any default go build tags
-BUILDTAGS :=
+export GO111MODULE=on
 
-# Add to compile time flags
-GITCOMMIT := $(shell git rev-parse --short HEAD)
-GITUNTRACKEDCHANGES := $(shell git status --porcelain --untracked-files=no)
-BUILDTIME := $(shell date -u +'%Y-%m-%dT%H:%M:%SZ')
-ifneq ($(GITUNTRACKEDCHANGES),)
-	GITCOMMIT := $(GITCOMMIT)-dirty
-endif
-GITBRANCH = $(shell git rev-parse --verify --abbrev-ref HEAD)
-CTIMEVAR = -X '$(VERSIONPKG).commitSHA=$(GITCOMMIT)' \
-		   -X '$(VERSIONPKG).branch=$(GITBRANCH)' \
-		   -X '$(VERSIONPKG).date=$(BUILDTIME)'
+.PHONY: all
+all: clean build
 
-GO_LDFLAGS=-ldflags "-w $(CTIMEVAR)"
-GO_LDFLAGS_STATIC=-ldflags "-w $(CTIMEVAR) -extldflags -static"
-
-all: clean
-
-$(NAME): ## Builds a static executable
-	@echo "+ $@"
-	CGO_ENABLED=1 go build -tags "$(BUILDTAGS)" ${GO_LDFLAGS} -o $(NAME)
+.PHONY: build
+build: bin-data
+	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(NAME) .
 
 .PHONY: bin-data
 bin-data:
 	cd db/migrations && go-bindata -o migrations.go -pkg migrations -ignore migrations.go . && cd ../../
 
-.PHONY: build
-build: bin-data $(NAME)
-
 .PHONY: clean
 clean:
-	@echo "+ $@"
-	$(RM) $(NAME)
+	rm -rf $(NAME) goxz
+	go clean
+
+.PHONY: install
+install:
+	go install -ldflags=$(BUILD_LDFLAGS) .
 
 .PHONY: tests
-tests: build
+tests: clean build
 	@echo "+ $@"
-	go test ./... -cover
+	go test ./...
 
 .PHONY: integration-tests
-integration-tests: clean build
+integration-tests: clean install
 	@echo "+ $@"
 	bats -t tests/integration/*.bats
 
