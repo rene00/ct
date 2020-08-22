@@ -3,7 +3,6 @@ VERSION := $$(make -s show-version)
 CURRENT_REVISION := $(shell git rev-parse --short HEAD)
 BUILD_LDFLAGS := "-s -w -X main.revision=$(CURRENT_REVISION)"
 GOBIN ?= $(shell go env GOPATH)/bin
-
 export GO111MODULE=on
 
 .PHONY: all
@@ -29,19 +28,13 @@ clean:
 install:
 	go install -ldflags=$(BUILD_LDFLAGS) .
 
-.PHONY: tests
-tests: clean build
-	@echo "+ $@"
+.PHONY: test
+test: clean build
 	go test ./...
 
 .PHONY: integration-tests
 integration-tests: clean install
-	@echo "+ $@"
 	bats -t tests/integration/*.bats
-
-.PHONY: all-tests
-all-tests: clean tests integration-tests
-	@echo "+ $@"
 
 $(GOBIN)/golint:
 	cd && go get golang.org/x/lint/golint
@@ -60,25 +53,10 @@ show-version: $(GOBIN)/gobump
 $(GOBIN)/gobump:
 	@cd && go get github.com/x-motemen/gobump/cmd/gobump
 
-.PHONY: bump
-bump: $(GOBIN)/gobump
-ifneq ($(shell git status --porcelain),)
-        $(error git workspace is dirty)
-endif
-ifneq ($(shell git rev-parse --abbrev-ref HEAD),master)
-        $(error current branch is not master)
-endif
-	@gobump up -w .
-    git commit -am "bump up version to $(VERSION)"
-    git tag "v$(VERSION)"
-    git push origin master
-    git push origin "refs/tags/v$(VERSION)"
-
 .PHONY: lint
 lint: $(GOBIN)/golint
 	go vet .
 	golint -set_exit_status . cmd config internal/...
-
 
 .PHONY: upload
 upload: $(GOBIN)/ghr
@@ -86,3 +64,18 @@ upload: $(GOBIN)/ghr
 
 $(GOBIN)/ghr:
 	cd && go get github.com/tcnksm/ghr 
+
+.PHONY: bump
+bump: $(GOBIN)/gobump
+ifneq ($(shell git status --porcelain),)
+	$(error git workspace is dirty)
+endif
+ifneq ($(shell git rev-parse --abbrev-ref HEAD),master)
+	$(error current branch is not master)
+endif
+	@gobump up -w .
+	git commit -am "bump up version to $(VERSION)"
+	git tag "v$(VERSION)"
+	git push origin master
+	git push origin "refs/tags/v$(VERSION)"
+
