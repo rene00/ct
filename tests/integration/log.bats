@@ -103,7 +103,6 @@
 	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2.1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
-    [ ${lines[0]} == "Error: Already logged metric within frequency" ]
 
 	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
 }
