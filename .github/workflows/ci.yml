@@ -26,8 +26,8 @@ jobs:
     - name: unit tests
       run: make tests
 
+    - name: install bats
+      run: sudo apt-get update && sudo apt-get install -y bats
+
     - name: integration tests
-      run: |
-      sudo apt-get update
-      sudo apt-get install -y bats
       make integration-tests
