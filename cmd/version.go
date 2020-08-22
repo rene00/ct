@@ -17,6 +17,7 @@ var versionCmd = &cobra.Command{
 
 var version string
 
+// SetVersion sets the global version string so it can be called from main and exposed to cmd.
 func SetVersion(v string) {
 	version = v
 }
