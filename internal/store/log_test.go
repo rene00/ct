@@ -82,7 +82,7 @@ func TestLogStoreCreate(t *testing.T) {
 	}
 
 	if err = logStore.Create(ctx, &Log{MetricID: *metricID, Value: "1", Timestamp: ts}); err == nil {
-		t.Error("Want err but err is nil when claling logstore.Create()")
+		t.Error("No error raised when calling logStore.Create() on duplicate log")
 	}
 
 	tx, err := db.BeginTx(ctx, nil)

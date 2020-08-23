@@ -87,6 +87,3 @@ and then add to your `~/.bashrc`:
 ct log --metric weight 2>/dev/null
 ```
 ct will continue to ask `whats your weight?` everytime you open a new shell and will stop once you submit a metric. It will then ask again the next day.
-
-
-
