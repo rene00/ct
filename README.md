@@ -25,9 +25,8 @@ $ ct log --metric weight --timestamp 2020-01-22 --value 90
 Edit existing log:
 
 ```bash
-$ ct log --metric weight --timestamp 2020-01-22 --value 80
+$ ct log --metric weight --timestamp 2020-01-22 --value 80 --edit
 ```
-
 
 Report on weight:
 
