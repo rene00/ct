@@ -5,15 +5,18 @@ import (
 	"database/sql"
 )
 
+// MetricStorer manages metrics.
 type MetricStorer interface {
 	Create(context.Context, string) (*Metric, error)
 	SelectOne(context.Context, string) (*Metric, error)
 }
 
+// MetricStore manages metrics.
 type MetricStore struct {
 	DB *sql.DB
 }
 
+// Create creates a new metric.
 func (s MetricStore) Create(ctx context.Context, metricName string) (*Metric, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -45,6 +48,7 @@ func (s MetricStore) Create(ctx context.Context, metricName string) (*Metric, er
 	return metric, nil
 }
 
+// SelectOne returns a single metric.
 func (s MetricStore) SelectOne(ctx context.Context, metricName string) (*Metric, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {

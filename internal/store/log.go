@@ -9,15 +9,18 @@ import (
 	"strings"
 )
 
+// LogStorer manages metric logs.
 type LogStorer interface {
 	Create(context.Context, *Log) error
 	Upsert(context.Context, *Log) error
 }
 
+// LogStore manages metric logs.
 type LogStore struct {
 	DB *sql.DB
 }
 
+// Create creates a new log item.
 func (s LogStore) Create(ctx context.Context, o *Log) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
@@ -64,6 +67,7 @@ func (s LogStore) Create(ctx context.Context, o *Log) error {
 	return tx.Commit()
 }
 
+// Upsert inserts a new metric log or updates an existing log if it exists.
 func (s LogStore) Upsert(ctx context.Context, o *Log) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {

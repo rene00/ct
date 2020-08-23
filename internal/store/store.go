@@ -10,6 +10,7 @@ var (
 	ErrNotFound = errors.New("Not Found")
 )
 
+// NewStore returns a Store.
 func NewStore(DB *sql.DB) *Store {
 	return &Store{
 		Config: ConfigStore{DB},
@@ -18,6 +19,7 @@ func NewStore(DB *sql.DB) *Store {
 	}
 }
 
+// Store is the main struct which is used to access store methods.
 type Store struct {
 	Log    LogStorer
 	Metric MetricStorer

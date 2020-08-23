@@ -5,14 +5,17 @@ import (
 	"database/sql"
 )
 
+// ConfigStorer manages metric config.
 type ConfigStorer interface {
 	Create(context.Context, int64) error
 }
 
+// ConfigStore manages metric config.
 type ConfigStore struct {
 	DB *sql.DB
 }
 
+// Create creates a new config item.
 func (s ConfigStore) Create(ctx context.Context, metricID int64) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
