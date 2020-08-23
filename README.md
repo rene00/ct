@@ -1,6 +1,8 @@
-# ct - a command line metric tracker
+# ct - consistency tracker
 
-ct is a personal project I created to track some basic metrics daily, such as my body weight and walking distance.
+ct is a command line tool I created to track some basic metrics daily, such as my body weight and walking distance.
+
+The intent of ct is to help consistently track key metrics so that I can track my progress.
 
 ## Usage
 
@@ -25,9 +27,8 @@ $ ct log --metric weight --timestamp 2020-01-22 --value 90
 Edit existing log:
 
 ```bash
-$ ct log --metric weight --timestamp 2020-01-22 --value 80
+$ ct log --metric weight --timestamp 2020-01-22 --value 80 --edit
 ```
-
 
 Report on weight:
 
@@ -76,3 +77,16 @@ Dump your data to json:
 ```bash
 $ ct dump
 ```
+
+Have ct ask for a log when you open your shell but stop asking once you add a value:
+```bash
+$ ct configure --metric weight --value-text "whats your weight?"
+```
+and then add to your `~/.bashrc`:
+```
+ct log --metric weight 2>/dev/null
+```
+ct will continue to ask `whats your weight?` everytime you open a new shell and will stop once you submit a metric. It will then ask again the next day.
+
+
+

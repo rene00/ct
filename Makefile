@@ -30,7 +30,7 @@ install: bin-data
 
 .PHONY: test
 test: clean build
-	go test ./...
+	go test -cover ./...
 
 .PHONY: integration-tests
 integration-tests: clean install
