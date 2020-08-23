@@ -4,6 +4,8 @@
 // 000001_init.up.sql
 // 000002_log.down.sql
 // 000002_log.up.sql
+// 000003_remove_frequency.down.sql
+// 000003_remove_frequency.up.sql
 // DO NOT EDIT!
 
 package migrations
@@ -151,6 +153,46 @@ func _000002_logUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000003_remove_frequencyDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x01\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00")
+
+func _000003_remove_frequencyDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000003_remove_frequencyDownSql,
+		"000003_remove_frequency.down.sql",
+	)
+}
+
+func _000003_remove_frequencyDownSql() (*asset, error) {
+	bytes, err := _000003_remove_frequencyDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000003_remove_frequency.down.sql", size: 0, mode: os.FileMode(420), modTime: time.Unix(1598180818, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000003_remove_frequencyUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x71\xf5\x71\x0d\x71\x55\x70\x0b\xf2\xf7\x55\x48\xce\xcf\x4b\xcb\x4c\x57\x08\xf7\x70\x0d\x72\x55\xc8\x2f\x28\x51\xb0\x55\x50\x4f\x2b\x4a\x2d\x2c\x4d\xcd\x4b\xae\x54\xe7\x02\x04\x00\x00\xff\xff\x2b\x11\x3b\x02\x2b\x00\x00\x00")
+
+func _000003_remove_frequencyUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000003_remove_frequencyUpSql,
+		"000003_remove_frequency.up.sql",
+	)
+}
+
+func _000003_remove_frequencyUpSql() (*asset, error) {
+	bytes, err := _000003_remove_frequencyUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000003_remove_frequency.up.sql", size: 43, mode: os.FileMode(420), modTime: time.Unix(1598180857, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -207,6 +249,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000001_init.up.sql": _000001_initUpSql,
 	"000002_log.down.sql": _000002_logDownSql,
 	"000002_log.up.sql": _000002_logUpSql,
+	"000003_remove_frequency.down.sql": _000003_remove_frequencyDownSql,
+	"000003_remove_frequency.up.sql": _000003_remove_frequencyUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -253,6 +297,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000001_init.up.sql": &bintree{_000001_initUpSql, map[string]*bintree{}},
 	"000002_log.down.sql": &bintree{_000002_logDownSql, map[string]*bintree{}},
 	"000002_log.up.sql": &bintree{_000002_logUpSql, map[string]*bintree{}},
+	"000003_remove_frequency.down.sql": &bintree{_000003_remove_frequencyDownSql, map[string]*bintree{}},
+	"000003_remove_frequency.up.sql": &bintree{_000003_remove_frequencyUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
