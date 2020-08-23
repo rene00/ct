@@ -217,9 +217,58 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	#run ct log --config-file "${CONFIG_FILE}" --metric test --edit --value 2.1 --timestamp 2020-01-01
-	#printf '%s\n' 'output: ' "${output}" >&2
-	#[ $status -eq 0 ]
+	run ct log --config-file "${CONFIG_FILE}" --metric test --edit --value 2.1 --timestamp 2020-01-01
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct dump --config-file "${CONFIG_FILE}"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "2.1" ]
+
+	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+}
+
+@test "ct: log quiet" {
+	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
+	run ct init --config-file "${CONFIG_FILE}"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01 --quiet
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 1 ]
+
+	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+}
+
+@test "ct: log stdin" {
+	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
+	run ct init --config-file "${CONFIG_FILE}"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+    echo 2.1 > ${BATS_TMPDIR}/$$.txt
+	run ct log --config-file "${CONFIG_FILE}" --metric test --edit < ${BATS_TMPDIR}/$$.txt 
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct dump --config-file "${CONFIG_FILE}"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "2.1" ]
 
 	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
 }

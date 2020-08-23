@@ -35,8 +35,8 @@ var logCmd = &cobra.Command{
 		s := store.NewStore(db)
 
 		metricName := viper.GetString("metric")
+		quiet := viper.GetBool("quiet")
 		value := viper.GetString("value")
-		// quiet := viper.GetBool("quiet")
 
 		timestamp, err := parseTimestamp(viper.GetString("timestamp"))
 		if err != nil {
@@ -58,12 +58,27 @@ var logCmd = &cobra.Command{
 			}
 		}
 
+		valueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
+		if err != nil && err != store.ErrNotFound {
+			return err
+		}
+
+		value, err = getValueFromConsole(value, valueText)
+		if err != nil {
+			return err
+		}
+
 		logFunc := s.Log.Create
 		if viper.GetBool("edit") {
 			logFunc = s.Log.Upsert
 		}
 
-		return logFunc(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp})
+		err = logFunc(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp})
+		if err != nil && !quiet {
+			return err
+		}
+
+		return nil
 	},
 }
 
