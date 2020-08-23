@@ -82,8 +82,6 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 			}
 
 			switch opt {
-			case "frequency":
-				metricConfig.Frequency = val
 			case "value_text":
 				metricConfig.ValueText = val
 			case "data_type":

@@ -25,12 +25,6 @@ func (s ConfigStore) Create(ctx context.Context, metricID int64) error {
 		return err
 	}
 
-	// FIXME: Default frequency to daily for now but support WithFrequency() in the future.
-	_, err = stmt.ExecContext(ctx, metricID, "frequency", "daily")
-	if err != nil {
-		return err
-	}
-
 	// FIXME: Default data_type to float for now but support WithDataType() in the future.
 	_, err = stmt.ExecContext(ctx, metricID, "data_type", "float")
 	if err != nil {

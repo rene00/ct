@@ -12,7 +12,6 @@ type Metric struct {
 
 // MetricConfig has the config of a metric.
 type MetricConfig struct {
-	Frequency string `json:"frequency,omitempty"`
 	ValueText string `json:"value_text,omitempty"`
 	DataType  string `json:"data_type,omitempty"`
 }

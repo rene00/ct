@@ -27,7 +27,7 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct configure --config-file "${CONFIG_FILE}" --metric test --frequency daily
+	run ct configure --config-file "${CONFIG_FILE}" --metric test
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -39,7 +39,6 @@
     [ $status -eq 0 ]
 	printf '%s\n' 'output: ' "${output}" >&2
     [ $(echo "${output}" | jq -r .[].metric_name) == "test" ]
-    [ $(echo "${output}" | jq -r .[].metric_config.frequency) == "daily" ]
     [ $(echo "${output}" | jq -r .[].metric_config.value_text) == "foo" ]
     [ $(echo "${output}" | jq -r .[].metric_config.data_type) == "float" ]
 
@@ -52,10 +51,6 @@
 	[ $status -eq 0 ]
 
 	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2 --timestamp 20-01-02
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 1 ]
-
-	run ct configure --config-file "${CONFIG_FILE}" --metric test --frequency notSupportedFrequency
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 

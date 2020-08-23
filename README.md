@@ -45,10 +45,10 @@ $ ct report --report-type=monthly-average
 +---------+--------+-------+-------+
 ```
 
-Configure metric to be set daily:
+Configure metric to be an integer:
 
 ```bash
-$ ct configure --metric weight --frequency daily
+$ ct configure --metric weight --data-type int
 ```
 
 Configure text to be shown when logging a metric without passing the value param:
