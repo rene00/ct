@@ -110,20 +110,6 @@ func CreateMetric(db *sql.DB, metric model.Metric) (*int64, error) {
 		return nil, err
 	}
 
-	sqlStmt = `
-	INSERT INTO config (metric_id, opt, val)
-	VALUES (?, "frequency", "daily")
-	`
-	stmt, err = tx.Prepare(sqlStmt)
-	if err != nil {
-		return nil, err
-	}
-	defer stmt.Close()
-
-	if _, err = stmt.ExecContext(ctx, metricID); err != nil {
-		return nil, err
-	}
-
 	return &metricID, nil
 }
 
@@ -236,8 +222,6 @@ func GetMetricConfig(db *sql.DB, metric model.Metric) (model.MetricConfig, error
 			return metricConfig, err
 		}
 		switch option {
-		case "frequency":
-			metricConfig.Frequency = value
 		case "value_text":
 			metricConfig.ValueText = value
 		case "data_type":

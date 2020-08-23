@@ -82,8 +82,6 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 			}
 
 			switch opt {
-			case "frequency":
-				metricConfig.Frequency = val
 			case "value_text":
 				metricConfig.ValueText = val
 			case "data_type":
@@ -101,7 +99,7 @@ func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
 
 		m.Config = metricConfig
 
-		sqlStmt = `SELECT timestamp, value FROM ct WHERE metric_id = ?`
+		sqlStmt = `SELECT timestamp, value FROM log WHERE metric_id = ?`
 		rows, err = db.Query(sqlStmt, m.ID)
 		if err != nil {
 			return err

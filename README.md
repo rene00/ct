@@ -22,10 +22,17 @@ Log weight with a timestamp:
 $ ct log --metric weight --timestamp 2020-01-22 --value 90
 ```
 
+Edit existing log:
+
+```bash
+$ ct log --metric weight --timestamp 2020-01-22 --value 80
+```
+
+
 Report on weight:
 
 ```bash
-$ ct report --report-type=all
+$ ct report all --metrics weight
 +----------------------+--------+-------+
 |      TIMESTAMP       |  NAME  | VALUE |
 +----------------------+--------+-------+
@@ -37,7 +44,7 @@ $ ct report --report-type=all
 Produce a monthly average report on weight:
 
 ```bash
-$ ct report --report-type=monthly-average
+$ ct report monthly-average --metrics weight
 +---------+--------+-------+-------+
 |  MONTH  |  NAME  | VALUE | COUNT |
 +---------+--------+-------+-------+
@@ -45,10 +52,10 @@ $ ct report --report-type=monthly-average
 +---------+--------+-------+-------+
 ```
 
-Configure metric to be set daily:
+Configure metric to be an integer:
 
 ```bash
-$ ct configure --metric weight --frequency daily
+$ ct configure --metric weight --data-type int
 ```
 
 Configure text to be shown when logging a metric without passing the value param:

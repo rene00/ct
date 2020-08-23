@@ -58,20 +58,6 @@ func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
 		return err
 	}
 
-	supportedFrequencies := []string{
-		"daily",
-	}
-
-	frequency, _ := flags.GetString("frequency")
-	if frequency != "" {
-		if ok := stringInSlice(frequency, supportedFrequencies); !ok {
-			return errors.New("Frequency not supported")
-		}
-		if err := storage.UpsertConfig(db, metricID, "frequency", frequency); err != nil {
-			return err
-		}
-	}
-
 	valueText, _ := flags.GetString("value-text")
 	if valueText != "" {
 		if err := storage.UpsertConfig(db, metricID, "value_text", valueText); err != nil {
@@ -103,7 +89,6 @@ func initConfigureCmd() {
 	f.String("config-file", "", "Config file")
 	f.String("metric", "", "Metric")
 	c.MarkFlagRequired("metric")
-	f.String("frequency", "", "Metric Frequency")
 	f.String("data-type", "", "Metric Data Type")
 	f.String("value-text", "", "Metric Value Text")
 }

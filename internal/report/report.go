@@ -44,11 +44,11 @@ func All(db *sql.DB, flags *pflag.FlagSet) error {
 
 	sqlStmt := `
 	SELECT metric.name AS metric_name,
-	ROUND(ct.value, 2) AS metric_value,
-	ct.timestamp AS metric_timestamp
-	FROM ct
-	INNER JOIN metric ON metric.id = ct.metric_id
-	ORDER BY ct.timestamp
+	ROUND(log.value, 2) AS metric_value,
+	log.timestamp AS metric_timestamp
+	FROM log
+	INNER JOIN metric ON metric.id = log.metric_id
+	ORDER BY log.timestamp
 	ASC
 	`
 	rows, err := db.Query(sqlStmt)
@@ -115,14 +115,14 @@ func stringInSlice(s string, sl []string) bool {
 func MonthlyAverage(db *sql.DB, metrics []string) error {
 	sqlStmt := `
 	SELECT metric.name AS metric_name,
-	ROUND(AVG(ct.value), 2) AS metric_value,
+	ROUND(AVG(log.value), 2) AS metric_value,
 	COUNT(1) AS metric_count,
-	STRFTIME("%Y-%m", ct.timestamp) AS month
-	FROM ct
-	INNER JOIN metric ON metric.id = ct.metric_id
-	WHERE ct.timestamp >= DATE('now', '-1 year')
+	STRFTIME("%Y-%m", log.timestamp) AS month
+	FROM log
+	INNER JOIN metric ON metric.id = log.metric_id
+	WHERE log.timestamp >= DATE('now', '-1 year')
 	GROUP BY metric_name, month
-	ORDER BY ct.timestamp
+	ORDER BY log.timestamp
 	`
 	rows, err := db.Query(sqlStmt)
 	if err != nil {
@@ -180,13 +180,13 @@ func Streak(db *sql.DB, metricName string) error {
 	sqlStmt := `
 	SELECT 
 	metric.id AS metric_id,
-	ct.value AS metric_value,
-	ct.id AS ct_id
-	FROM ct
+	log.value AS metric_value,
+	log.id AS log_id
+	FROM log
 	INNER JOIN metric 
-	ON metric.id = ct.metric_id
+	ON metric.id = log.metric_id
 	WHERE metric.name = ?
-	ORDER BY ct.timestamp
+	ORDER BY log.timestamp
 	DESC
 	LIMIT 1
 	`
@@ -199,8 +199,8 @@ func Streak(db *sql.DB, metricName string) error {
 
 	var metricID int
 	var lastValue string
-	var ctID int
-	err = stmt.QueryRow(metricName).Scan(&metricID, &lastValue, &ctID)
+	var logID int
+	err = stmt.QueryRow(metricName).Scan(&metricID, &lastValue, &logID)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func Streak(db *sql.DB, metricName string) error {
 	sqlStmt = `
 	SELECT
 	value AS metric_value
-	FROM ct
+	FROM log
 	WHERE metric_id = ?
 	AND id != ?
 	ORDER BY timestamp
@@ -222,7 +222,7 @@ func Streak(db *sql.DB, metricName string) error {
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(metricID, ctID)
+	rows, err := stmt.Query(metricID, logID)
 	if err != nil {
 		return err
 	}

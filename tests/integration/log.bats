@@ -13,24 +13,6 @@
 	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
 }
 
-@test "ct: log default frequency" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-
-	run ct dump --config-file "${CONFIG_FILE}" 
-    [ $status -eq 0 ]
-	printf '%s\n' 'output: ' "${output}" >&2
-    [ $(echo "${output}" | jq -r .[].metric_config.frequency) == "daily" ]
-
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
-}
-
 @test "ct: log with timestamp" {
 	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
 	run ct init --config-file "${CONFIG_FILE}"
@@ -96,10 +78,6 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct configure --config-file "${CONFIG_FILE}" --metric test --frequency daily
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-
 	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2.1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
@@ -117,7 +95,7 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct configure --config-file "${CONFIG_FILE}" --metric test --frequency daily --data-type float
+	run ct configure --config-file "${CONFIG_FILE}" --metric test --data-type float
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -128,6 +106,23 @@
 	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2.1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
+
+	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+}
+
+@test "ct: log edit" {
+	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
+	run ct init --config-file "${CONFIG_FILE}"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	#run ct log --config-file "${CONFIG_FILE}" --metric test --edit --value 2.1 --timestamp 2020-01-01
+	#printf '%s\n' 'output: ' "${output}" >&2
+	#[ $status -eq 0 ]
 
 	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
 }
