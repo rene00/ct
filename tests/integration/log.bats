@@ -272,3 +272,25 @@
 
 	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
 }
+
+@test "ct: log stdin exceed daily frequency" {
+	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
+	run ct init --config-file "${CONFIG_FILE}"
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+    echo 2.1 > ${BATS_TMPDIR}/$$.txt
+	run ct log --config-file "${CONFIG_FILE}" --metric test --timestamp 2020-01-01 < ${BATS_TMPDIR}/$$.txt 
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --timestamp 2020-01-01 < ${BATS_TMPDIR}/$$.txt 
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 1 ]
+
+	run ct log --config-file "${CONFIG_FILE}" --metric test --timestamp 2020-01-01 --quiet < ${BATS_TMPDIR}/$$.txt 
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+}
