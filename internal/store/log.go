@@ -7,17 +7,39 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // LogStorer manages metric logs.
 type LogStorer interface {
 	Create(context.Context, *Log) error
 	Upsert(context.Context, *Log) error
+	SelectOne(context.Context, int64, time.Time) (*Log, error)
 }
 
 // LogStore manages metric logs.
 type LogStore struct {
 	DB *sql.DB
+}
+
+// SelectOne returns a single log.
+func (s LogStore) SelectOne(ctx context.Context, metricID int64, ts time.Time) (*Log, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var ret Log
+	err = tx.QueryRowContext(ctx, "SELECT id, timestamp, metric_id, value FROM log WHERE metric_id = ? AND timestamp = ?", metricID, ts.Format("2006-01-02")).Scan(&ret.LogID, &ret.Timestamp, &ret.MetricID, &ret.Value)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if err != nil && err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+
+	return &ret, tx.Commit()
 }
 
 // Create creates a new log item.
