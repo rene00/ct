@@ -4,7 +4,7 @@ package testtooling
 
 import (
 	"context"
-	"ct/internal/storage"
+	"ct/db/migrations"
 	"database/sql"
 	"fmt"
 	"io/ioutil"
@@ -90,7 +90,7 @@ func CreateTmpDB() (string, *sql.DB, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	if err := storage.DoMigrateDb(fmt.Sprintf("sqlite3://%s", dbFile)); err != nil {
+	if err := migrations.DoMigrateDb(fmt.Sprintf("sqlite3://%s", dbFile)); err != nil {
 		return "", nil, err
 	}
 	return dbFile, db, nil
