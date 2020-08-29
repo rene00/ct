@@ -17,7 +17,7 @@ $(GOBIN)/go-bindata:
 
 .PHONY: bin-data
 bin-data: $(GOBIN)/go-bindata
-	cd db/migrations && go-bindata -o migrations.go -pkg migrations -ignore migrations.go . && cd ../../
+	cd db/migrations && go-bindata -o bindata.go -pkg migrations -ignore bindata.go . && cd ../../
 
 .PHONY: clean
 clean:

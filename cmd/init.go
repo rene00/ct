@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"ct/config"
-	"ct/internal/storage"
+	"ct/db/migrations"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,14 +32,16 @@ var initCmd = &cobra.Command{
 		}
 
 		usrCfg := cfg.UserViperConfig
-		usrCfg.Set("ct", userConfig{DbFile: dbFile})
+		usrCfg.Set("ct", struct {
+			DbFile string `json:"db_file"`
+		}{DbFile: dbFile})
 
 		if err := cfg.Save("ct"); err != nil {
 			return err
 		}
 
 		dbURL := fmt.Sprintf("sqlite3://%s", dbFile)
-		if err := storage.DoMigrateDb(dbURL); err != nil {
+		if err := migrations.DoMigrateDb(dbURL); err != nil {
 			return err
 		}
 

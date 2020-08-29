@@ -1,86 +1,73 @@
 package cmd
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"os"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 
 	"ct/config"
-	"ct/internal/model"
-	"ct/internal/storage"
+	"ct/internal/store"
 	"database/sql"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
-
-type userConfig struct {
-	DbFile string `json:"db_file"`
-}
 
 var configureCmd = &cobra.Command{
 	Use: "configure [command]",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		for _, flag := range []string{"config-file", "metric", "data-type", "value-text"} {
+			_ = viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
+		}
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
 			return err
 		}
-		return runConfigure(cfg, cmd.Flags())
-	},
-}
 
-func runConfigure(cfg *config.Config, flags *pflag.FlagSet) error {
-	usrCfg := cfg.UserViperConfig
-	dbFile := usrCfg.GetString("ct.db_file")
-	if dbFile == "" {
-		return errors.New("db_file not set")
-	}
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			return err
+		}
+		defer db.Close()
 
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+		s := store.NewStore(db)
 
-	metricName, _ := flags.GetString("metric")
+		ctx := context.Background()
+		metric, err := s.Metric.SelectOne(ctx, viper.GetString("metric"))
+		if err != nil && err != store.ErrNotFound {
+			return err
+		}
+		if err != nil && err == store.ErrNotFound {
+			metric, err = s.Metric.Create(ctx, viper.GetString("metric"))
+			if err != nil {
+				return err
+			}
+		}
 
-	// No more configuration needed.
-	if metricName == "" {
+		valueText := viper.GetString("value-text")
+		if valueText != "" {
+			config := &store.Config{metric.MetricID, "value_text", valueText}
+			if err := s.Config.Upsert(ctx, config); err != nil {
+				return err
+			}
+		}
+
+		dataType := viper.GetString("data-type")
+		if dataType != "" {
+			config := &store.Config{metric.MetricID, "data_type", dataType}
+			if ok := config.IsDataTypeSupported(); !ok {
+				return fmt.Errorf("Data type not supported")
+			}
+			if err := s.Config.Upsert(ctx, config); err != nil {
+				return err
+			}
+		}
+
 		return nil
-	}
-
-	metric := model.Metric{Name: metricName}
-	metricID, err := storage.GetMetricID(db, metric)
-	if err != nil {
-		return err
-	}
-
-	valueText, _ := flags.GetString("value-text")
-	if valueText != "" {
-		if err := storage.UpsertConfig(db, metricID, "value_text", valueText); err != nil {
-			return err
-		}
-	}
-
-	supportedDataTypes := []string{
-		"int",
-		"float",
-		"bool",
-	}
-	dataType, _ := flags.GetString("data-type")
-	if dataType != "" {
-		if ok := stringInSlice(dataType, supportedDataTypes); !ok {
-			return errors.New("Data type not supported")
-		}
-		if err := storage.UpsertConfig(db, metricID, "data_type", dataType); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	},
 }
 
 func initConfigureCmd() {

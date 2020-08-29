@@ -15,3 +15,22 @@ type Log struct {
 	Value     string    `json:"value" db:"value"`
 	Timestamp time.Time `json:"timestamp" db:"timestamp"`
 }
+
+// Config is a metric config.
+type Config struct {
+	MetricID int64  `json:"metric_id" db:"metric_id"`
+	Opt      string `json:"opt" db:"opt"`
+	Val      string `json:"val" db:"val"`
+}
+
+// IsDataTypeSupported returns bool on whether data-type value is supported.
+func (c Config) IsDataTypeSupported() bool {
+	supported := false
+	for _, v := range []string{"int", "float", "bool"} {
+		if v == c.Val {
+			supported = true
+			break
+		}
+	}
+	return supported
+}

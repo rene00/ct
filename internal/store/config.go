@@ -9,6 +9,7 @@ import (
 type ConfigStorer interface {
 	Create(context.Context, int64) error
 	SelectOne(context.Context, int64, string) (string, error)
+	Upsert(context.Context, *Config) error
 }
 
 // ConfigStore manages metric config.
@@ -56,4 +57,25 @@ func (s ConfigStore) SelectOne(ctx context.Context, metricID int64, configOpt st
 	}
 
 	return ret, tx.Commit()
+}
+
+// Upsert inserts a new config or updates an existing config if it exists.
+func (s ConfigStore) Upsert(ctx context.Context, o *Config) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO config (metric_id, opt, val) VALUES (?, ?, ?) ON CONFLICT(metric_id, opt) DO UPDATE SET val = ?")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, o.MetricID, o.Opt, o.Val, o.Val)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

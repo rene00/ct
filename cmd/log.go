@@ -5,6 +5,7 @@ import (
 	"ct/config"
 	"ct/internal/store"
 	"database/sql"
+	"fmt"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
@@ -56,6 +57,17 @@ var logCmd = &cobra.Command{
 			if err = s.Config.Create(ctx, metric.MetricID); err != nil {
 				return err
 			}
+		}
+
+		log, err := s.Log.SelectOne(ctx, metric.MetricID, timestamp)
+		if err != nil && err != store.ErrNotFound {
+			return err
+		}
+		if log != nil && !viper.GetBool("edit") {
+			if quiet {
+				return nil
+			}
+			return fmt.Errorf("log for %s with timestamp of %s already exists", metric.Name, timestamp.Format("2006-01-02"))
 		}
 
 		valueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
