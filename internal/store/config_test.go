@@ -47,7 +47,7 @@ func TestConfigStoreSelectOne(t *testing.T) {
 		t.Error(err)
 	}
 
-	ret, err = configStore.SelectOne(ctx, 1, "data_type")
+	ret, err := configStore.SelectOne(ctx, *metricID, "data_type")
 	if err != nil {
 		t.Error(err)
 	}
