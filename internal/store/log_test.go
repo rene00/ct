@@ -103,3 +103,37 @@ func TestLogStoreCreate(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestLogSelectOne(t *testing.T) {
+	dbFile, db, err := testtooling.CreateTmpDB()
+	if err != nil {
+		t.Error(err)
+	}
+	defer db.Close()
+	defer os.Remove(dbFile)
+
+	ctx := context.Background()
+	metricID, err := testtooling.CreateMetric(ctx, db)
+	if err != nil {
+		t.Error(err)
+	}
+
+	logID, err := testtooling.CreateLog(ctx, db, *metricID)
+	if err != nil {
+		t.Error(err)
+	}
+
+	ts, err := time.Parse("2006-01-02", "2020-01-01")
+	if err != nil {
+		t.Error(err)
+	}
+
+	logStore := LogStore{db}
+	log, err := logStore.SelectOne(ctx, *metricID, ts)
+	if err != nil {
+		t.Error(err)
+	}
+	if log.LogID != *logID {
+		t.Errorf("want log.LogID to equal %d but got %d", logID, log.LogID)
+	}
+}
