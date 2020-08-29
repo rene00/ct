@@ -23,6 +23,7 @@ type Config struct {
 	Val      string `json:"val" db:"val"`
 }
 
+// IsDataTypeSupported returns bool on whether data-type value is supported.
 func (c Config) IsDataTypeSupported() bool {
 	supported := false
 	for _, v := range []string{"int", "float", "bool"} {

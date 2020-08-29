@@ -67,7 +67,7 @@ var logCmd = &cobra.Command{
 			if quiet {
 				return nil
 			}
-			return fmt.Errorf("log for %s with timestamp of %s already exists.", metric.Name, timestamp.Format("2006-01-02"))
+			return fmt.Errorf("log for %s with timestamp of %s already exists", metric.Name, timestamp.Format("2006-01-02"))
 		}
 
 		valueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
