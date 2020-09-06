@@ -52,3 +52,45 @@ func TestMetricStoreSelectOne(t *testing.T) {
 	}
 
 }
+
+func TestMetricStoreSelectLimit(t *testing.T) {
+	dbFile, db, err := testtooling.CreateTmpDB()
+	if err != nil {
+		t.Error(err)
+	}
+	defer db.Close()
+	defer os.Remove(dbFile)
+
+	metricStore := MetricStore{db}
+
+	ctx := context.Background()
+	ret, err := metricStore.SelectLimit(ctx, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 0 {
+		t.Error()
+	}
+
+	for i := 0; i < 5; i++ {
+		if _, err = testtooling.CreateMetric(ctx, db); err != nil {
+			t.Error(err)
+		}
+	}
+
+	ret, err = metricStore.SelectLimit(ctx, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 5 {
+		t.Error()
+	}
+
+	ret, err = metricStore.SelectLimit(ctx, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 1 {
+		t.Error()
+	}
+}

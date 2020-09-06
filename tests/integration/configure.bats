@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 
 @test "ct: configure" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+    CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+    DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -17,9 +18,9 @@
 	run ct dump --config-file "${CONFIG_FILE}" 
     [ $status -eq 0 ]
 	printf '%s\n' 'output: ' "${output}" >&2
-    [ $(echo "${output}" | jq -r .[].metric_name) == "test" ]
-    [ $(echo "${output}" | jq -r .[].metric_config.value_text) == "foo" ]
-    [ $(echo "${output}" | jq -r .[].metric_config.data_type) == "float" ]
+    [ $(echo "${output}" | jq -r .metrics[0].name) == "test" ]
+    [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="value_text") | .val') == "foo" ]
+    [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="data_type") | .val') == "float" ]
 
 	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2019-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
@@ -57,6 +58,6 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+	rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 

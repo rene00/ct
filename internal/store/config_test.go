@@ -55,3 +55,45 @@ func TestConfigStoreSelectOne(t *testing.T) {
 		t.Errorf("want float but got %s", ret)
 	}
 }
+
+func TestConfigStoreSelectLimit(t *testing.T) {
+	dbFile, db, err := testtooling.CreateTmpDB()
+	if err != nil {
+		t.Error(err)
+	}
+	defer db.Close()
+	defer os.Remove(dbFile)
+
+	configStore := ConfigStore{db}
+
+	ctx := context.Background()
+	ret, err := configStore.SelectLimit(ctx, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 0 {
+		t.Error()
+	}
+
+	for i := 0; i < 5; i++ {
+		if _, err = testtooling.CreateMetric(ctx, db); err != nil {
+			t.Error(err)
+		}
+	}
+
+	ret, err = configStore.SelectLimit(ctx, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 5 {
+		t.Error()
+	}
+
+	ret, err = configStore.SelectLimit(ctx, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 1 {
+		t.Error()
+	}
+}

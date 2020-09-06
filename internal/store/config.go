@@ -10,6 +10,7 @@ type ConfigStorer interface {
 	Create(context.Context, int64) error
 	SelectOne(context.Context, int64, string) (string, error)
 	Upsert(context.Context, *Config) error
+	SelectLimit(context.Context, int64) ([]Config, error)
 }
 
 // ConfigStore manages metric config.
@@ -78,4 +79,44 @@ func (s ConfigStore) Upsert(ctx context.Context, o *Config) error {
 	}
 
 	return tx.Commit()
+}
+
+// SelectLimit returns all config rows up to limit. A limit of 0 is no limit.
+func (s ConfigStore) SelectLimit(ctx context.Context, limit int64) ([]Config, error) {
+
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var ret []Config
+	var rows *sql.Rows
+
+	if limit == 0 {
+		rows, err = tx.QueryContext(ctx, "SELECT metric_id, opt, val FROM config")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rows, err = tx.QueryContext(ctx, "SELECT metric_id, opt, val FROM config LIMIT ?", limit)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var o Config
+		if err = rows.Scan(&o.MetricID, &o.Opt, &o.Val); err != nil {
+			return nil, err
+		}
+		ret = append(ret, o)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ret, tx.Commit()
 }

@@ -1,18 +1,16 @@
 package cmd
 
 import (
+	"context"
 	"ct/config"
-	"ct/internal/model"
+	"ct/internal/store"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var dumpCmd = &cobra.Command{
@@ -20,121 +18,51 @@ var dumpCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
 		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("%v\n", err))
+			fmt.Fprintf(os.Stderr, "%v\n", err)
 			return err
 		}
-		return runDumpCmd(cfg, cmd.Flags(), args)
+
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+
+		s := store.NewStore(db)
+		ctx := context.Background()
+
+		type dumpOutput struct {
+			Metrics []store.Metric `json:"metrics"`
+			Configs []store.Config `json:"configs"`
+			Logs    []store.Log    `json:"logs"`
+		}
+
+		d := &dumpOutput{}
+
+		d.Metrics, err = s.Metric.SelectLimit(ctx, 0)
+		if err != nil {
+			return err
+		}
+
+		d.Configs, err = s.Config.SelectLimit(ctx, 0)
+		if err != nil {
+			return err
+		}
+
+		d.Logs, err = s.Log.SelectLimit(ctx, 0)
+		if err != nil {
+			return err
+		}
+
+		dump, err := json.Marshal(d)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("%s\n", dump)
+
+		return nil
 	},
-}
-
-func runDumpCmd(cfg *config.Config, flags *pflag.FlagSet, args []string) error {
-	var sqlStmt string
-
-	usrCfg := cfg.UserViperConfig
-
-	db, err := sql.Open("sqlite3", usrCfg.GetString("ct.db_file"))
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	metrics := []*model.Metric{}
-
-	sqlStmt = `SELECT id, name from metric`
-	rows, err := db.Query(sqlStmt)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var id int
-		var name string
-
-		if err := rows.Scan(&id, &name); err != nil {
-			return err
-		}
-		metric := &model.Metric{ID: id, Name: name}
-		metrics = append(metrics, metric)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return err
-	}
-
-	for _, m := range metrics {
-		sqlStmt = `SELECT opt, val FROM config WHERE metric_id = ?`
-		rows, err := db.Query(sqlStmt, m.ID)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		metricConfig := model.MetricConfig{}
-
-		for rows.Next() {
-			var opt string
-			var val string
-
-			if err := rows.Scan(&opt, &val); err != nil {
-				return err
-			}
-
-			switch opt {
-			case "value_text":
-				metricConfig.ValueText = val
-			case "data_type":
-				metricConfig.DataType = val
-			default:
-				return errors.New("Unsupported config option")
-			}
-
-		}
-
-		err = rows.Err()
-		if err != nil {
-			return err
-		}
-
-		m.Config = metricConfig
-
-		sqlStmt = `SELECT timestamp, value FROM log WHERE metric_id = ?`
-		rows, err = db.Query(sqlStmt, m.ID)
-		if err != nil {
-			return err
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var timestamp time.Time
-			var value float64
-
-			metricData := model.MetricData{}
-
-			if err := rows.Scan(&timestamp, &value); err != nil {
-				return err
-			}
-
-			metricData.Timestamp = timestamp
-			metricData.Value = value
-			m.Data = append(m.Data, metricData)
-		}
-
-		err = rows.Err()
-		if err != nil {
-			return err
-		}
-	}
-
-	dump, err := json.Marshal(metrics)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("%s\n", dump)
-
-	return nil
 }
 
 func initDumpCmd() {

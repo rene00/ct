@@ -9,6 +9,7 @@ import (
 type MetricStorer interface {
 	Create(context.Context, string) (*Metric, error)
 	SelectOne(context.Context, string) (*Metric, error)
+	SelectLimit(context.Context, int64) ([]Metric, error)
 }
 
 // MetricStore manages metrics.
@@ -46,6 +47,46 @@ func (s MetricStore) Create(ctx context.Context, metricName string) (*Metric, er
 	}
 
 	return metric, nil
+}
+
+// SelectLimit returns all metric rows up to limit. A limit of 0 is no limit.
+func (s MetricStore) SelectLimit(ctx context.Context, limit int64) ([]Metric, error) {
+
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var ret []Metric
+	var rows *sql.Rows
+
+	if limit == 0 {
+		rows, err = tx.QueryContext(ctx, "SELECT id, name FROM metric")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rows, err = tx.QueryContext(ctx, "SELECT id, name FROM metric LIMIT ?", limit)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var o Metric
+		if err = rows.Scan(&o.MetricID, &o.Name); err != nil {
+			return nil, err
+		}
+		ret = append(ret, o)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ret, tx.Commit()
 }
 
 // SelectOne returns a single metric.

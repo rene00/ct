@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 
 @test "ct: log int" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -17,16 +18,17 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "1" ]
-    [ $(echo "${output}" | jq -r .[].metric_name) == "test" ]
-    [ $(echo "${output}" | jq -r .[].metric_config.data_type) == "int" ]
+    [ $(echo "${output}" | jq -r .metrics[0].name) == "test" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "1" ]
+    [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="data_type") | .val') == "int" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log int with timestamp" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -37,15 +39,16 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "1" ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].timestamp) == "2020-01-01T00:00:00Z" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "1" ]
+    [ $(echo "${output}" | jq -r .logs[0].timestamp) == "2020-01-01T00:00:00Z" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log float" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -60,16 +63,17 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "1" ]
-    [ $(echo "${output}" | jq -r .[].metric_name) == "test" ]
-    [ $(echo "${output}" | jq -r .[].metric_config.data_type) == "float" ]
+    [ $(echo "${output}" | jq -r .metrics[0].name) == "test" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "1" ]
+    [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="data_type") | .val') == "float" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log float with timestamp" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -80,15 +84,16 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "1.1" ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].timestamp) == "2020-01-01T00:00:00Z" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "1.1" ]
+    [ $(echo "${output}" | jq -r .logs[0].timestamp) == "2020-01-01T00:00:00Z" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log bool" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -103,16 +108,17 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "0" ]
-    [ $(echo "${output}" | jq -r .[].metric_name) == "test" ]
-    [ $(echo "${output}" | jq -r .[].metric_config.data_type) == "bool" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "0" ]
+    [ $(echo "${output}" | jq -r .metrics[0].name) == "test" ]
+    [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="data_type") | .val') == "bool" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log bool with timestamp" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -123,16 +129,17 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "0" ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].timestamp) == "2020-01-01T00:00:00Z" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "0" ]
+    [ $(echo "${output}" | jq -r .logs[0].timestamp) == "2020-01-01T00:00:00Z" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 
 @test "ct: log wrong type" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 
 	[ $status -eq 0 ]
@@ -144,13 +151,14 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 
 @test "ct: log with yes-no" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -162,12 +170,13 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log exceed daily frequency" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -179,12 +188,13 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log exceed daily frequency with data-type" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -204,12 +214,13 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log edit" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -224,14 +235,15 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "2.1" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "2.1" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log quiet" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -247,12 +259,13 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log stdin" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -268,14 +281,15 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .[].metric_data[].value) == "2.1" ]
+    [ $(echo "${output}" | jq -r .logs[0].value) == "2.1" ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: log stdin exceed daily frequency" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -292,5 +306,5 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }

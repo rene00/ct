@@ -15,6 +15,7 @@ type LogStorer interface {
 	Create(context.Context, *Log) error
 	Upsert(context.Context, *Log) error
 	SelectOne(context.Context, int64, time.Time) (*Log, error)
+	SelectLimit(context.Context, int64) ([]Log, error)
 }
 
 // LogStore manages metric logs.
@@ -134,6 +135,45 @@ func (s LogStore) Upsert(ctx context.Context, o *Log) error {
 	}
 
 	return tx.Commit()
+}
+
+// SelectLimit returns all log rows up to limit. A limit of 0 is no limit.
+func (s LogStore) SelectLimit(ctx context.Context, limit int64) ([]Log, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var ret []Log
+	var rows *sql.Rows
+
+	if limit == 0 {
+		rows, err = tx.QueryContext(ctx, "SELECT id, metric_id, value, timestamp FROM log")
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		rows, err = tx.QueryContext(ctx, "SELECT id, metric_id, value, timestamp FROM log LIMIT ?", limit)
+		if err != nil {
+			return nil, err
+		}
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var o Log
+		if err = rows.Scan(&o.LogID, &o.MetricID, &o.Value, &o.Timestamp); err != nil {
+			return nil, err
+		}
+		ret = append(ret, o)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ret, tx.Commit()
 }
 
 func getBoolFromValue(value string) (string, error) {
