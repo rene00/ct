@@ -137,3 +137,49 @@ func TestLogSelectOne(t *testing.T) {
 		t.Errorf("want log.LogID to equal %d but got %d", logID, log.LogID)
 	}
 }
+
+func TestLogStoreSelectLimit(t *testing.T) {
+	dbFile, db, err := testtooling.CreateTmpDB()
+	if err != nil {
+		t.Error(err)
+	}
+	defer db.Close()
+	defer os.Remove(dbFile)
+
+	logStore := LogStore{db}
+
+	ctx := context.Background()
+	ret, err := logStore.SelectLimit(ctx, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 0 {
+		t.Error()
+	}
+
+	for i := 0; i < 5; i++ {
+		metricID, err := testtooling.CreateMetric(ctx, db)
+		if err != nil {
+			t.Error(err)
+		}
+		if _, err := testtooling.CreateLog(ctx, db, *metricID); err != nil {
+			t.Error(err)
+		}
+	}
+
+	ret, err = logStore.SelectLimit(ctx, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 5 {
+		t.Error()
+	}
+
+	ret, err = logStore.SelectLimit(ctx, 1)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ret) != 1 {
+		t.Error()
+	}
+}
