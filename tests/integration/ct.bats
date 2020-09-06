@@ -1,17 +1,18 @@
 #!/usr/bin/env bats
 
 @test "ct: init" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+    DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-	[ "$(jq -r .ct.db_file ${CONFIG_FILE})" == "${BATS_TMPDIR}/ct.db" ]
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+	[ "$(jq -r .ct.db_file ${CONFIG_FILE})" == "${DB_FILE}" ]
 }
 
 @test "ct: db migrate" {
 	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+    DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 

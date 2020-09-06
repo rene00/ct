@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 
 @test "ct: report all" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -33,12 +34,13 @@
 	echo "${output}" | grep -q "test2"
 	[ $status -eq 0 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: report monthly-average" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -69,12 +71,13 @@
 	echo "${output}" | grep "2020-02" | grep -q "test2"
 	[ $status -eq 0 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
 @test "ct: report streak" {
-	CONFIG_FILE="${BATS_TMPDIR}/ct.json"
-	run ct init --config-file "${CONFIG_FILE}"
+	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
+	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
+	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -110,5 +113,5 @@
 	echo "${output}" | grep "test2" | awk '{print $4}' | grep 1
 	[ $status -eq 0 ]
 
-	rm -f "${CONFIG_FILE}" "${BATS_TMPDIR}/ct.db"
+    rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
