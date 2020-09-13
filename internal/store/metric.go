@@ -10,11 +10,32 @@ type MetricStorer interface {
 	Create(context.Context, string) (*Metric, error)
 	SelectOne(context.Context, string) (*Metric, error)
 	SelectLimit(context.Context, int64) ([]Metric, error)
+	Delete(context.Context, int64) error
 }
 
 // MetricStore manages metrics.
 type MetricStore struct {
 	DB *sql.DB
+}
+
+func (s MetricStore) Delete(ctx context.Context, metricID int64) error {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, "DELETE FROM metric WHERE id = ?")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.ExecContext(ctx, metricID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // Create creates a new metric.
@@ -62,12 +83,12 @@ func (s MetricStore) SelectLimit(ctx context.Context, limit int64) ([]Metric, er
 	var rows *sql.Rows
 
 	if limit == 0 {
-		rows, err = tx.QueryContext(ctx, "SELECT id, name FROM metric")
+		rows, err = tx.QueryContext(ctx, "SELECT id, name FROM metric ORDER BY name")
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		rows, err = tx.QueryContext(ctx, "SELECT id, name FROM metric LIMIT ?", limit)
+		rows, err = tx.QueryContext(ctx, "SELECT id, name FROM metric ORDER BY name LIMIT ?", limit)
 		if err != nil {
 			return nil, err
 		}
