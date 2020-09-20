@@ -94,6 +94,7 @@ var metricCreateCmd = &cobra.Command{
 		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
 		_ = viper.BindPFlag("metric-name", cmd.Flags().Lookup("metric-name"))
 		_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
+		_ = viper.BindPFlag("value-text", cmd.Flags().Lookup("value-text"))
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
@@ -126,6 +127,13 @@ var metricCreateCmd = &cobra.Command{
 			}
 		}
 
+		valueText := viper.GetString("value-text")
+		if valueText != "" {
+			if err := s.Config.Upsert(ctx, &store.Config{metric.MetricID, "value_text", valueText}); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	},
 }
@@ -145,6 +153,7 @@ func initMetricCreateCmd() {
 	c.MarkFlagRequired("metric-name")
 	f.String("config-file", "", "")
 	f.String("data-type", "", "Metric data type (bool, float or int)")
+	f.String("value-text", "", "Metric value text")
 }
 
 func initMetricListCmd() {
