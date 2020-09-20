@@ -29,7 +29,7 @@
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ $(echo "${output}" | jq -r .configs[0].val) == "is this a test?" ]
+    [ "$(echo ${output} | jq -r .configs[0].val)" == "is this a test?" ]
 
     rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
