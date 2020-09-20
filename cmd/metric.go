@@ -163,11 +163,11 @@ func initMetricDeleteCmd() {
 func initMetricCreateCmd() {
 	c := metricCreateCmd
 	f := c.Flags()
-	f.String("metric-name", "", "Name of metric to create")
+	f.String("metric-name", "", "name of metric to create")
 	c.MarkFlagRequired("metric-name")
 	f.String("config-file", "", "")
-	f.String("data-type", "", "Metric data type (bool, float or int)")
-	f.String("value-text", "", "Metric value text")
+	f.String("data-type", "", "metric data type (bool, float or int)")
+	f.String("value-text", "", "metric value text")
 }
 
 func initMetricListCmd() {
