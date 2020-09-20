@@ -5,6 +5,7 @@ import (
 	"ct/config"
 	"ct/internal/store"
 	"database/sql"
+	"fmt"
 	"os"
 
 	"github.com/olekukonko/tablewriter"
@@ -47,6 +48,9 @@ var metricDeleteCmd = &cobra.Command{
 
 var metricListCmd = &cobra.Command{
 	Use: "list [command]",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
 		if err != nil {
@@ -84,6 +88,48 @@ var metricListCmd = &cobra.Command{
 	},
 }
 
+var metricCreateCmd = &cobra.Command{
+	Use: "create [command]",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
+		_ = viper.BindPFlag("metric-name", cmd.Flags().Lookup("metric-name"))
+		_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.NewConfig(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+
+		s := store.NewStore(db)
+		ctx := context.Background()
+
+		metric, err := s.Metric.Create(ctx, viper.GetString("metric-name"))
+		if err != nil {
+			return err
+		}
+
+		dataType := viper.GetString("data-type")
+		if dataType != "" {
+			config := &store.Config{metric.MetricID, "data_type", dataType}
+			if ok := config.IsDataTypeSupported(); !ok {
+				return fmt.Errorf("Data type not supported")
+			}
+			if err := s.Config.Upsert(ctx, config); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	},
+}
+
 func initMetricDeleteCmd() {
 	c := metricDeleteCmd
 	f := c.Flags()
@@ -92,9 +138,27 @@ func initMetricDeleteCmd() {
 	f.String("config-file", "", "")
 }
 
+func initMetricCreateCmd() {
+	c := metricCreateCmd
+	f := c.Flags()
+	f.String("metric-name", "", "Name of metric to create")
+	c.MarkFlagRequired("metric-name")
+	f.String("config-file", "", "")
+	f.String("data-type", "", "Metric data type (bool, float or int)")
+}
+
+func initMetricListCmd() {
+	c := metricListCmd
+	f := c.Flags()
+	f.String("config-file", "", "")
+}
+
 func init() {
 	initMetricDeleteCmd()
+	initMetricCreateCmd()
+	initMetricListCmd()
 	metricCmd.AddCommand(metricDeleteCmd)
+	metricCmd.AddCommand(metricCreateCmd)
 	metricCmd.AddCommand(metricListCmd)
 	rootCmd.AddCommand(metricCmd)
 }

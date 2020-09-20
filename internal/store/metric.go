@@ -18,6 +18,7 @@ type MetricStore struct {
 	DB *sql.DB
 }
 
+// Delete deletes a metric by id.
 func (s MetricStore) Delete(ctx context.Context, metricID int64) error {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
