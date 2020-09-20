@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -72,14 +73,27 @@ var metricListCmd = &cobra.Command{
 		}
 
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "Value Text"})
+		table.SetHeader([]string{"Name", "Config", "Count", "Last"})
 
 		for _, metric := range metrics {
+			configDataType, err := s.Config.SelectOne(ctx, metric.MetricID, "data_type")
+			if err != nil && err != store.ErrNotFound {
+				return err
+			}
 			configValueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
 			if err != nil && err != store.ErrNotFound {
 				return err
 			}
-			table.Append([]string{metric.Name, configValueText})
+			last30Days, err := s.Log.SelectWithTimestamp(ctx, metric.MetricID, time.Now().AddDate(0, 0, -30))
+			if err != nil {
+				return err
+			}
+			lastLog, err := s.Log.SelectLast(ctx, metric.MetricID)
+			if err != nil {
+				return err
+			}
+			configText := fmt.Sprintf("%s; %s", configDataType, configValueText)
+			table.Append([]string{metric.Name, configText, fmt.Sprintf("%d", len(last30Days)), lastLog.Timestamp.Format("2006-01-02")})
 		}
 
 		table.Render()

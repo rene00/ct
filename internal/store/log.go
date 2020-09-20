@@ -16,6 +16,8 @@ type LogStorer interface {
 	Upsert(context.Context, *Log) error
 	SelectOne(context.Context, int64, time.Time) (*Log, error)
 	SelectLimit(context.Context, int64) ([]Log, error)
+	SelectWithTimestamp(context.Context, int64, time.Time) ([]Log, error)
+	SelectLast(context.Context, int64) (*Log, error)
 }
 
 // LogStore manages metric logs.
@@ -41,6 +43,57 @@ func (s LogStore) SelectOne(ctx context.Context, metricID int64, ts time.Time) (
 	}
 
 	return &ret, tx.Commit()
+}
+
+// SelectOne returns the last inserted log.
+func (s LogStore) SelectLast(ctx context.Context, metricID int64) (*Log, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var ret Log
+	err = tx.QueryRowContext(ctx, "SELECT id, timestamp, metric_id, value FROM log WHERE metric_id = ? ORDER BY timestamp DESC LIMIT 1", metricID).Scan(&ret.LogID, &ret.Timestamp, &ret.MetricID, &ret.Value)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	if err != nil && err == sql.ErrNoRows {
+		return nil, ErrNotFound
+	}
+
+	return &ret, tx.Commit()
+}
+
+// SelectWithTimestamp returns a slice of logs since timestamp.
+func (s LogStore) SelectWithTimestamp(ctx context.Context, metricID int64, ts time.Time) ([]Log, error) {
+	tx, err := s.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	var ret []Log
+	var rows *sql.Rows
+
+	rows, err = tx.QueryContext(ctx, "SELECT id, metric_id, value, timestamp FROM log WHERE metric_id = ? AND timestamp >= ?", metricID, ts.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var o Log
+		if err = rows.Scan(&o.LogID, &o.MetricID, &o.Value, &o.Timestamp); err != nil {
+			return nil, err
+		}
+		ret = append(ret, o)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ret, tx.Commit()
 }
 
 // Create creates a new log item.

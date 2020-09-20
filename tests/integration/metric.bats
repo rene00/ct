@@ -107,10 +107,6 @@
 	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
 	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 
-	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-
 	run ct metric list --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
