@@ -12,22 +12,27 @@ Initialise a ct config file and database:
 $ ct init
 ```
 
-Create and log new metric called weight:
-
+Create a new metric called weight:
 ```bash
-$ ct log --metric weight --value 100
+$ ct metric create --metric-name weight --data-type float
 ```
 
-Log weight with a timestamp:
+Create weight metric log:
 
 ```bash
-$ ct log --metric weight --timestamp 2020-01-22 --value 90
+$ ct log create --metric-name weight --metric-value 100
 ```
 
-Edit existing log:
+Create weight metric log with a timestamp:
 
 ```bash
-$ ct log --metric weight --timestamp 2020-01-22 --value 80 --edit
+$ ct log create --metric-name weight --metric-valid 90 --timestamp 2020-01-22 
+```
+
+Update an existing metric log:
+
+```bash
+$ ct log create --metric-name weight --metric-valid 95 --timestamp 2020-01-22 
 ```
 
 Report on weight:

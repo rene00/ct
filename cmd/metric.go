@@ -136,15 +136,12 @@ var metricCreateCmd = &cobra.Command{
 			return err
 		}
 
-		dataType := viper.GetString("data-type")
-		if dataType != "" {
-			config := &store.Config{metric.MetricID, "data_type", dataType}
-			if ok := config.IsDataTypeSupported(); !ok {
-				return fmt.Errorf("Data type not supported")
-			}
-			if err := s.Config.Upsert(ctx, config); err != nil {
-				return err
-			}
+		config := &store.Config{metric.MetricID, "data_type", viper.GetString("data-type")}
+		if ok := config.IsDataTypeSupported(); !ok {
+			return fmt.Errorf("Data type not supported")
+		}
+		if err := s.Config.Upsert(ctx, config); err != nil {
+			return err
 		}
 
 		valueText := viper.GetString("value-text")
@@ -172,7 +169,7 @@ func initMetricCreateCmd() {
 	f.String("metric-name", "", "name of metric to create")
 	c.MarkFlagRequired("metric-name")
 	f.String("config-file", "", "")
-	f.String("data-type", "", "metric data type (bool, float or int)")
+	f.String("data-type", "float", "metric data type (bool, float or int)")
 	f.String("value-text", "", "metric value text")
 }
 
