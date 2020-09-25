@@ -45,7 +45,7 @@ func (s LogStore) SelectOne(ctx context.Context, metricID int64, ts time.Time) (
 	return &ret, tx.Commit()
 }
 
-// SelectOne returns the last inserted log.
+// SelectLast returns the last inserted log.
 func (s LogStore) SelectLast(ctx context.Context, metricID int64) (*Log, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
