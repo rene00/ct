@@ -78,22 +78,28 @@ var metricListCmd = &cobra.Command{
 		for _, metric := range metrics {
 			configDataType, err := s.Config.SelectOne(ctx, metric.MetricID, "data_type")
 			if err != nil && err != store.ErrNotFound {
-				return err
+				return fmt.Errorf("Failed finding data_type config: %s", err)
 			}
 			configValueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
 			if err != nil && err != store.ErrNotFound {
-				return err
+				return fmt.Errorf("Failed finding value_text config: %s", err)
 			}
 			last30Days, err := s.Log.SelectWithTimestamp(ctx, metric.MetricID, time.Now().AddDate(0, 0, -30))
 			if err != nil {
-				return err
+				return fmt.Errorf("Failed finding last 30 days of logs: %s", err)
 			}
+
 			lastLog, err := s.Log.SelectLast(ctx, metric.MetricID)
-			if err != nil {
-				return err
+			if err != nil && err != store.ErrNotFound {
+				return fmt.Errorf("Failed finding last log entry: %s", err)
 			}
+			lastLogFriendlyTimestamp := "None"
+			if lastLog != nil {
+				lastLogFriendlyTimestamp = lastLog.Timestamp.Format("2006-01-02")
+			}
+
 			configText := fmt.Sprintf("%s; %s", configDataType, configValueText)
-			table.Append([]string{metric.Name, configText, fmt.Sprintf("%d", len(last30Days)), lastLog.Timestamp.Format("2006-01-02")})
+			table.Append([]string{metric.Name, configText, fmt.Sprintf("%d", len(last30Days)), lastLogFriendlyTimestamp})
 		}
 
 		table.Render()
