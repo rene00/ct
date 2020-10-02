@@ -7,11 +7,19 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test1 --value 1 --timestamp 2020-01-01
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test1 --data-type int
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test2 --value 1 --timestamp 2020-01-01
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test2 --data-type int
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test1 --metric-value 1 --timestamp 2020-01-01
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test2 --metric-value 1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -44,11 +52,19 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test1 --value 1 --timestamp 2020-01-01
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test1 --data-type int
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test2 --value 1 --timestamp 2020-02-01
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test2 --data-type int
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test1 --metric-value 1 --timestamp 2020-01-01
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test2 --metric-value 1 --timestamp 2020-02-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -81,7 +97,15 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test1 --value 1 --timestamp 2020-01-01
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test1 --data-type int
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test2 --data-type int
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test1 --metric-value 1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -89,11 +113,11 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test1 --value 1 --timestamp 2020-01-02
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test1 --metric-value 1 --timestamp 2020-01-02
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test2 --value 1 --timestamp 2020-02-01
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test2 --metric-value 1 --timestamp 2020-02-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
