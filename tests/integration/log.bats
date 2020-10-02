@@ -239,15 +239,19 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --data-type int
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01 --quiet
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2020-01-01
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 1 --timestamp 2020-01-01 --quiet
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 1 --timestamp 2020-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
@@ -261,12 +265,16 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --data-type float
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 1
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
     echo 2.1 > ${BATS_TMPDIR}/$$.txt
-	run ct log --config-file "${CONFIG_FILE}" --metric test --edit < ${BATS_TMPDIR}/$$.txt 
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --update < ${BATS_TMPDIR}/$$.txt 
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -285,16 +293,20 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-    echo 2.1 > ${BATS_TMPDIR}/$$.txt
-	run ct log --config-file "${CONFIG_FILE}" --metric test --timestamp 2020-01-01 < ${BATS_TMPDIR}/$$.txt 
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --data-type float
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --timestamp 2020-01-01 < ${BATS_TMPDIR}/$$.txt 
+    echo 2.1 > ${BATS_TMPDIR}/$$.txt
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --timestamp 2020-01-01 < ${BATS_TMPDIR}/$$.txt 
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --timestamp 2020-01-01 < ${BATS_TMPDIR}/$$.txt 
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --timestamp 2020-01-01 --quiet < ${BATS_TMPDIR}/$$.txt 
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --timestamp 2020-01-01 --quiet < ${BATS_TMPDIR}/$$.txt 
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
