@@ -14,7 +14,11 @@
     [ $(echo "${output}" | jq -r .configs) == "null" ]
     [ $(echo "${output}" | jq -r .logs) == "null" ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --data-type int
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 1
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
