@@ -22,15 +22,15 @@
     [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="value_text") | .val') == "foo" ]
     [ $(echo "${output}" | jq -r '.configs[] | select(.metric_id==1) | select(.opt=="data_type") | .val') == "float" ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 1 --timestamp 2019-01-01
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 1 --timestamp 2019-01-01
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2.1 --timestamp 2019-01-02
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 2.1 --timestamp 2019-01-02
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2 --timestamp 20-01-02
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 2 --timestamp 20-01-02
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
@@ -42,11 +42,11 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2.0 --timestamp 2019-01-03
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 2.0 --timestamp 2019-01-03
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
-	run ct log --config-file "${CONFIG_FILE}" --metric test --value 2 --timestamp 2019-01-03
+	run ct log create --config-file "${CONFIG_FILE}" --metric-name test --metric-value 2 --timestamp 2019-01-03
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
