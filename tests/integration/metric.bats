@@ -22,14 +22,14 @@
 	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
 	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 
-	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --value-text "is this a test?"
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --value-text "test1"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
 	run ct dump --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-    [ "$(echo ${output} | jq -r .configs[0].val)" == "is this a test?" ]
+    [ $(echo ${output} | jq -r '.configs[] | select(.opt=="value_text") | .val') == "test1" ]
 
     rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
@@ -78,6 +78,10 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 1 ]
 
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --data-type ""
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 1 ]
+
     rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
@@ -106,10 +110,6 @@
 	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
 	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
 	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
-
-	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
 
 	run ct metric list --config-file "${CONFIG_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
