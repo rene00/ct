@@ -18,8 +18,6 @@ var logCmd = &cobra.Command{
 	Short: "Manage metric logs",
 }
 
-// ct log prompt --timestamp --force
-
 var logPromptCmd = &cobra.Command{
 	Use:   "prompt [command]",
 	Short: "Prompt a value for all metrics that havent been logged for a timestamp",
@@ -31,6 +29,10 @@ EXAMPLES
 - Prompt for all metrics with the current timestamp
 
   $ ct log prompt
+
+- Prompt for all metrics with the timestamp of 2020-01-01
+
+  $ ct log prompt --timestamp 2020-01-01
 `,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
