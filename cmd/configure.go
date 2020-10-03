@@ -41,10 +41,7 @@ var configureCmd = &cobra.Command{
 			return err
 		}
 		if err != nil && err == store.ErrNotFound {
-			metric, err = s.Metric.Create(ctx, viper.GetString("metric"))
-			if err != nil {
-				return err
-			}
+			return fmt.Errorf("Metric not found: %s", viper.GetString("metric"))
 		}
 
 		valueText := viper.GetString("value-text")
@@ -83,5 +80,4 @@ func initConfigureCmd() {
 func init() {
 	initConfigureCmd()
 	rootCmd.AddCommand(configureCmd)
-
 }
