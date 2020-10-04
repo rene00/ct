@@ -1,6 +1,8 @@
 package report
 
 import (
+	"context"
+	"ct/internal/store"
 	"database/sql"
 	"os"
 	"strconv"
@@ -25,8 +27,11 @@ type reportMonth struct {
 	// The metric name.
 	MetricName string `json:"metric_name"`
 
-	// The monthly value.
-	MetricValue float64 `json:"metric_value"`
+	// The monthly average.
+	MetricAverage float64 `json:"metric_average"`
+
+	// The monthly sum.
+	MetricSum float64 `json:"metric_sum"`
 
 	// The count for the month.
 	Count int `json:"count"`
@@ -110,45 +115,42 @@ func stringInSlice(s string, sl []string) bool {
 	return false
 }
 
-// MonthlyAverage generates the monthly average report.
-// BUG(rene): exclude bool metrics from this report.
-func MonthlyAverage(db *sql.DB, metrics []string) error {
-	sqlStmt := `
-	SELECT metric.name AS metric_name,
-	ROUND(AVG(log.value), 2) AS metric_value,
-	COUNT(1) AS metric_count,
-	STRFTIME("%Y-%m", log.timestamp) AS month
-	FROM log
-	INNER JOIN metric ON metric.id = log.metric_id
-	WHERE log.timestamp >= DATE('now', '-1 year')
-	GROUP BY metric_name, month
-	ORDER BY log.timestamp
-	`
-	rows, err := db.Query(sqlStmt)
+// MonthlyCounter generates the monthly report for counter metrics.
+func MonthlyCounter(ctx context.Context, db *sql.DB, metric *store.Metric) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer tx.Rollback()
 
-	report := []reportMonth{}
+	rows, err := tx.QueryContext(ctx, `
+	SELECT 
+	ROUND(AVG(value), 2) AS metric_average,
+	ROUND(SUM(value), 2) AS metric_sum,
+	COUNT(1) AS metric_count,
+	STRFTIME("%Y-%m", log.timestamp) AS month
+	FROM log
+	WHERE log.timestamp >= DATE('now', '-1 year')
+	AND log.metric_id = ?
+	GROUP BY month
+	ORDER BY log.timestamp
+`, metric.MetricID)
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Month", "Average", "Sum", "Count"})
 
 	for rows.Next() {
-		var metricName string
-		var metricValue float64
+		var avg float64
+		var sum float64
 		var count int
 		var month string
-		if err := rows.Scan(&metricName, &metricValue, &count, &month); err != nil {
+		if err := rows.Scan(&avg, &sum, &count, &month); err != nil {
 			return err
 		}
-		_reportMonth := reportMonth{metricName, metricValue, count, month}
-		if len(metrics) != 0 {
-			f := stringInSlice(metricName, metrics)
-			if f {
-				report = append(report, _reportMonth)
-			}
-			continue
-		}
-		report = append(report, _reportMonth)
+		table.Append([]string{month, strconv.FormatFloat(avg, 'f', -1, 64), strconv.FormatFloat(sum, 'f', -1, 64), strconv.Itoa(count)})
 	}
 
 	err = rows.Err()
@@ -156,23 +158,55 @@ func MonthlyAverage(db *sql.DB, metrics []string) error {
 		return err
 	}
 
-	reportData := [][]string{}
+	table.Render()
 
-	for _, r := range report {
-		rd := []string{r.Month, r.MetricName, strconv.FormatFloat(r.MetricValue, 'f', -1, 64), strconv.Itoa(r.Count)}
-		reportData = append(reportData, rd)
+	return tx.Commit()
+}
+
+// MonthlyGauge generates the monthly report for gauge metrics.
+func MonthlyGauge(ctx context.Context, db *sql.DB, metric *store.Metric) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+	SELECT 
+	ROUND(AVG(value), 2) AS metric_average,
+	COUNT(1) AS metric_count,
+	STRFTIME("%Y-%m", log.timestamp) AS month
+	FROM log
+	WHERE log.timestamp >= DATE('now', '-1 year')
+	AND log.metric_id = ?
+	GROUP BY month
+	ORDER BY log.timestamp
+`, metric.MetricID)
+	if err != nil {
+		return err
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Month", "Name", "Value", "Count"})
+	table.SetHeader([]string{"Month", "Average", "Count"})
 
-	for _, v := range reportData {
-		table.Append(v)
+	for rows.Next() {
+		var avg float64
+		var count int
+		var month string
+		if err := rows.Scan(&avg, &count, &month); err != nil {
+			return err
+		}
+		table.Append([]string{month, strconv.FormatFloat(avg, 'f', -1, 64), strconv.Itoa(count)})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
 	}
 
 	table.Render()
 
-	return nil
+	return tx.Commit()
 }
 
 // Streak prints the streak report.

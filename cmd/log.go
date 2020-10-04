@@ -18,6 +18,79 @@ var logCmd = &cobra.Command{
 	Short: "Manage metric logs",
 }
 
+var logPromptCmd = &cobra.Command{
+	Use:   "prompt [command]",
+	Short: "Prompt a value for all metrics that havent been logged for a timestamp",
+	Long: `
+Prompt a value for all metrics that havent been logged for a timestamp
+
+EXAMPLES
+
+- Prompt for all metrics with the current timestamp
+
+  $ ct log prompt
+
+- Prompt for all metrics with the timestamp of 2020-01-01
+
+  $ ct log prompt --timestamp 2020-01-01
+`,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
+		_ = viper.BindPFlag("timestamp", cmd.Flags().Lookup("timestamp"))
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.NewConfig(cmd.Flags())
+		if err != nil {
+			return err
+		}
+
+		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+
+		timestamp, err := parseTimestamp(viper.GetString("timestamp"))
+		if err != nil {
+			return err
+		}
+
+		s := store.NewStore(db)
+		ctx := context.Background()
+
+		metrics, err := s.Metric.SelectLimit(ctx, 0)
+		if err != nil {
+			return err
+		}
+
+		for _, metric := range metrics {
+			valueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
+			if err != nil && err != store.ErrNotFound {
+				return err
+			}
+			if err != nil && err == store.ErrNotFound {
+				continue
+			}
+
+			_, err = s.Log.SelectOne(ctx, metric.MetricID, timestamp)
+			if err != nil && err != store.ErrNotFound {
+				return err
+			}
+			if err != nil && err == store.ErrNotFound {
+				// TODO: update getValueFromConsole to log an error type when no value is provided. This will allow ct to skip over the prompt when no value is submitted here.
+				value, _ := getValueFromConsole("", valueText)
+				if value != "" {
+					if err = s.Log.Create(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp}); err != nil {
+						return fmt.Errorf("Failed to create log: %s", err)
+					}
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
 var logCreateCmd = &cobra.Command{
 	Use:   "create [command]",
 	Short: "Create a new log entry",
@@ -129,8 +202,17 @@ func initLogCreateCmd() {
 	f.Bool("update", false, "Update an existing metric value logged for the same timestamp")
 }
 
+func initLogPromptCmd() {
+	c := logPromptCmd
+	f := c.Flags()
+	f.String("config-file", "", "Filepath of the configuration file")
+	f.String("timestamp", time.Now().Format("2006-01-02"), "The timestamp of the metric (format: YYYY-MM-DD)")
+}
+
 func init() {
 	initLogCreateCmd()
+	initLogPromptCmd()
 	logCmd.AddCommand(logCreateCmd)
+	logCmd.AddCommand(logPromptCmd)
 	rootCmd.AddCommand(logCmd)
 }

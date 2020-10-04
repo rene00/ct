@@ -7,6 +7,10 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
+    run ct metric create --config-file "${CONFIG_FILE}" --metric-name test --data-type int
+	printf '%s\n' 'output: ' "${output}" >&2
+	[ $status -eq 0 ]
+
 	run ct configure --config-file "${CONFIG_FILE}" --metric test
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]

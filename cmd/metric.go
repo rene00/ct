@@ -65,7 +65,6 @@ var metricListCmd = &cobra.Command{
 		defer db.Close()
 
 		s := store.NewStore(db)
-
 		ctx := context.Background()
 		metrics, err := s.Metric.SelectLimit(ctx, 0)
 		if err != nil {
@@ -84,6 +83,11 @@ var metricListCmd = &cobra.Command{
 			if err != nil && err != store.ErrNotFound {
 				return fmt.Errorf("Failed finding value_text config: %s", err)
 			}
+			configMetricType, err := s.Config.SelectOne(ctx, metric.MetricID, "metric_type")
+			if err != nil && err != store.ErrNotFound {
+				return fmt.Errorf("Failed finding metric_type config: %s", err)
+			}
+
 			last30Days, err := s.Log.SelectWithTimestamp(ctx, metric.MetricID, time.Now().AddDate(0, 0, -30))
 			if err != nil {
 				return fmt.Errorf("Failed finding last 30 days of logs: %s", err)
@@ -98,7 +102,7 @@ var metricListCmd = &cobra.Command{
 				lastLogFriendlyTimestamp = lastLog.Timestamp.Format("2006-01-02")
 			}
 
-			configText := fmt.Sprintf("%s; %s", configDataType, configValueText)
+			configText := fmt.Sprintf("%s;%s;%s", configDataType, configMetricType, configValueText)
 			table.Append([]string{metric.Name, configText, fmt.Sprintf("%d", len(last30Days)), lastLogFriendlyTimestamp})
 		}
 
@@ -115,6 +119,7 @@ var metricCreateCmd = &cobra.Command{
 		_ = viper.BindPFlag("metric-name", cmd.Flags().Lookup("metric-name"))
 		_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
 		_ = viper.BindPFlag("value-text", cmd.Flags().Lookup("value-text"))
+		_ = viper.BindPFlag("metric-type", cmd.Flags().Lookup("metric-type"))
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
@@ -138,7 +143,15 @@ var metricCreateCmd = &cobra.Command{
 
 		config := &store.Config{metric.MetricID, "data_type", viper.GetString("data-type")}
 		if ok := config.IsDataTypeSupported(); !ok {
-			return fmt.Errorf("Data type not supported")
+			return fmt.Errorf("Data type not supported: %s", config.Val)
+		}
+		if err := s.Config.Upsert(ctx, config); err != nil {
+			return err
+		}
+
+		config = &store.Config{metric.MetricID, "metric_type", viper.GetString("metric-type")}
+		if ok := config.IsMetricTypeSupported(); !ok {
+			return fmt.Errorf("Metric type not supported: %s", config.Val)
 		}
 		if err := s.Config.Upsert(ctx, config); err != nil {
 			return err
@@ -171,6 +184,7 @@ func initMetricCreateCmd() {
 	f.String("config-file", "", "")
 	f.String("data-type", "float", "metric data type (bool, float or int)")
 	f.String("value-text", "", "metric value text")
+	f.String("metric-type", "gauge", "metric type (counter or gauge)")
 }
 
 func initMetricListCmd() {
