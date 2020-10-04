@@ -17,9 +17,11 @@ import (
 var configureCmd = &cobra.Command{
 	Use: "configure [command]",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		for _, flag := range []string{"config-file", "metric", "data-type", "value-text"} {
-			_ = viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
-		}
+		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
+		_ = viper.BindPFlag("metric", cmd.Flags().Lookup("metric"))
+		_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
+		_ = viper.BindPFlag("value-text", cmd.Flags().Lookup("value-text"))
+		_ = viper.BindPFlag("metric-type", cmd.Flags().Lookup("metric-type"))
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
@@ -63,6 +65,17 @@ var configureCmd = &cobra.Command{
 			}
 		}
 
+		metricType := viper.GetString("metric-type")
+		if metricType != "" {
+			config := &store.Config{metric.MetricID, "metric_type", metricType}
+			if ok := config.IsMetricTypeSupported(); !ok {
+				return fmt.Errorf("Metric type not supported")
+			}
+			if err := s.Config.Upsert(ctx, config); err != nil {
+				return err
+			}
+		}
+
 		return nil
 	},
 }
@@ -75,6 +88,7 @@ func initConfigureCmd() {
 	c.MarkFlagRequired("metric")
 	f.String("data-type", "", "Metric Data Type")
 	f.String("value-text", "", "Metric Value Text")
+	f.String("metric-type", "", "Metric Type")
 }
 
 func init() {

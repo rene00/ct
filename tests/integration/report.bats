@@ -45,18 +45,18 @@
     rm -f "${CONFIG_FILE}" "${DB_FILE}"
 }
 
-@test "ct: report monthly-average" {
+@test "ct: report monthly" {
 	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
 	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
 	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test1 --data-type int
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test1 --data-type int --metric-type gauge
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test2 --data-type int
+	run ct metric create --config-file "${CONFIG_FILE}" --metric-name test2 --data-type int --metric-type counter
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
@@ -68,23 +68,16 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct report monthly-average --config-file "${CONFIG_FILE}" --metrics test1
+	run ct report monthly --config-file "${CONFIG_FILE}" --metric test1
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-	echo "${output}" | grep "2020-01" | grep -q "test1"
+	echo "${output}" | grep "2020-01"
 	[ $status -eq 0 ]
 
-	run ct report monthly-average --config-file "${CONFIG_FILE}" --metrics test2
+	run ct report monthly --config-file "${CONFIG_FILE}" --metric test2
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-	echo "${output}" | grep "2020-02" | grep -q "test2"
-	[ $status -eq 0 ]
-
-	run ct report monthly-average --config-file "${CONFIG_FILE}" --metrics test1,test2
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-	echo "${output}" | grep "2020-01" | grep -q "test1"
-	echo "${output}" | grep "2020-02" | grep -q "test2"
+	echo "${output}" | grep "2020-02" 
 	[ $status -eq 0 ]
 
     rm -f "${CONFIG_FILE}" "${DB_FILE}"

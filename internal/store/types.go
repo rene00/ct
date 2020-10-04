@@ -34,3 +34,15 @@ func (c Config) IsDataTypeSupported() bool {
 	}
 	return supported
 }
+
+// IsMetricTypeSupported returns bool on whether metric-type value is supported.
+func (c Config) IsMetricTypeSupported() bool {
+	supported := false
+	for _, v := range []string{"gauge", "counter", "bool"} {
+		if v == c.Val {
+			supported = true
+			break
+		}
+	}
+	return supported
+}
