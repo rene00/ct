@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-@test "ct: report all" {
+@test "ct: report daily" {
 	CONFIG_FILE="${BATS_TMPDIR}/ct${RANDOM}.json"
 	DB_FILE="${BATS_TMPDIR}/ct${RANDOM}.db"
 	run ct init --config-file "${CONFIG_FILE}" --db-file "${DB_FILE}"
@@ -23,23 +23,12 @@
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
 
-	run ct report all --config-file "${CONFIG_FILE}" --metrics test1
+	run ct report daily --config-file "${CONFIG_FILE}" --metric test1
 	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-	echo "${output}" | grep -q "test1"
 	[ $status -eq 0 ]
 
-	run ct report all --config-file "${CONFIG_FILE}" --metrics test2
+	run ct report daily --config-file "${CONFIG_FILE}" --metric test2
 	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-	echo "${output}" | grep -q "test2"
-	[ $status -eq 0 ]
-
-	run ct report all --config-file "${CONFIG_FILE}" --metrics test1,test2
-	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-	echo "${output}" | grep -q "test1"
-	echo "${output}" | grep -q "test2"
 	[ $status -eq 0 ]
 
     rm -f "${CONFIG_FILE}" "${DB_FILE}"

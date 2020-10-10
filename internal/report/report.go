@@ -9,10 +9,9 @@ import (
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/olekukonko/tablewriter"
-	"github.com/spf13/pflag"
 )
 
-type reportAll struct {
+type reportDaily struct {
 	// The metric name.
 	MetricName string `json:"metric_name"`
 
@@ -40,46 +39,37 @@ type reportMonth struct {
 	Month string `json:"month"`
 }
 
-// All prints the all report.
-func All(db *sql.DB, flags *pflag.FlagSet) error {
-	metrics, err := flags.GetStringSlice("metrics")
+// Daily prints the daily report.
+func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
-	sqlStmt := `
-	SELECT metric.name AS metric_name,
-	ROUND(log.value, 2) AS metric_value,
-	log.timestamp AS metric_timestamp
+	rows, err := tx.QueryContext(ctx, `
+	SELECT
+	ROUND(value, 2),
+	STRFTIME("%Y-%m-%d", timestamp)
 	FROM log
-	INNER JOIN metric ON metric.id = log.metric_id
-	ORDER BY log.timestamp
+	WHERE metric_id = ?
+	ORDER BY timestamp
 	ASC
-	`
-	rows, err := db.Query(sqlStmt)
+	`, metric.MetricID)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
 
-	report := []reportAll{}
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Month", "Value"})
 
 	for rows.Next() {
-		var metricName string
-		var metricValue float64
-		var metricTimestamp string
-		if err := rows.Scan(&metricName, &metricValue, &metricTimestamp); err != nil {
+		var value float64
+		var timestamp string
+		if err := rows.Scan(&value, &timestamp); err != nil {
 			return err
 		}
-		_reportAll := reportAll{metricName, metricValue, metricTimestamp}
-		if len(metrics) != 0 {
-			f := stringInSlice(metricName, metrics)
-			if f {
-				report = append(report, _reportAll)
-			}
-			continue
-		}
-		report = append(report, _reportAll)
+		table.Append([]string{timestamp, strconv.FormatFloat(value, 'f', -1, 64)})
 	}
 
 	err = rows.Err()
@@ -87,23 +77,9 @@ func All(db *sql.DB, flags *pflag.FlagSet) error {
 		return err
 	}
 
-	reportData := [][]string{}
-
-	for _, r := range report {
-		rd := []string{r.Timestamp, r.MetricName, strconv.FormatFloat(r.MetricValue, 'f', -1, 64)}
-		reportData = append(reportData, rd)
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Timestamp", "Name", "Value"})
-
-	for _, v := range reportData {
-		table.Append(v)
-	}
-
 	table.Render()
 
-	return nil
+	return tx.Commit()
 }
 
 func stringInSlice(s string, sl []string) bool {
