@@ -37,6 +37,7 @@ func (s LogCommentStore) Upsert(ctx context.Context, o *Log, comment string) err
 	return tx.Commit()
 }
 
+// SelectOne selects a single log comment.
 func (s LogCommentStore) SelectOne(ctx context.Context, logID int64) (*LogComment, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
