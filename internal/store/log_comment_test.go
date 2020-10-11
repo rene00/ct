@@ -26,8 +26,32 @@ func TestLogComment(t *testing.T) {
 
 	logCommentStore := LogCommentStore{db}
 
-	t.Run("Create", func(t *testing.T) {
-		err = logCommentStore.Create(ctx, &Log{LogID: *logID}, "test")
+	t.Run("Upsert", func(t *testing.T) {
+		err = logCommentStore.Upsert(ctx, &Log{LogID: *logID}, "test")
+		assert.Nil(t, err)
+
+		tx, err := db.BeginTx(ctx, nil)
+		assert.Nil(t, err)
+
+		var comment string
+		err = tx.QueryRowContext(ctx, "SELECT comment FROM log_comment WHERE log_id = ?", *logID).Scan(&comment)
+		assert.Nil(t, err)
+		assert.Equal(t, "test", comment)
+
+		err = tx.Commit()
+		assert.Nil(t, err)
+
+		tx, err = db.BeginTx(ctx, nil)
+		assert.Nil(t, err)
+
+		err = logCommentStore.Upsert(ctx, &Log{LogID: *logID}, "more test")
+		assert.Nil(t, err)
+
+		err = tx.QueryRowContext(ctx, "SELECT comment FROM log_comment WHERE log_id = ?", *logID).Scan(&comment)
+		assert.Nil(t, err)
+		assert.Equal(t, "more test", comment)
+
+		err = tx.Commit()
 		assert.Nil(t, err)
 	})
 }
