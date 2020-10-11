@@ -23,6 +23,12 @@ type Config struct {
 	Val      string `json:"val" db:"val"`
 }
 
+// LogComment is a log comment.
+type LogComment struct {
+	LogID   int64  `json:"log_id" db:"log_id"`
+	Comment string `json:"comment" db:"comment"`
+}
+
 // IsDataTypeSupported returns bool on whether data-type value is supported.
 func (c Config) IsDataTypeSupported() bool {
 	supported := false

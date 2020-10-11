@@ -13,15 +13,17 @@ var (
 // NewStore returns a Store.
 func NewStore(DB *sql.DB) *Store {
 	return &Store{
-		Config: ConfigStore{DB},
-		Metric: MetricStore{DB},
-		Log:    LogStore{DB},
+		Config:     ConfigStore{DB},
+		Metric:     MetricStore{DB},
+		Log:        LogStore{DB},
+		LogComment: LogCommentStore{DB},
 	}
 }
 
 // Store is the main struct which is used to access store methods.
 type Store struct {
-	Log    LogStorer
-	Metric MetricStorer
-	Config ConfigStorer
+	Log        LogStorer
+	Metric     MetricStorer
+	Config     ConfigStorer
+	LogComment LogCommentStorer
 }

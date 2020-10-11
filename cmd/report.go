@@ -32,11 +32,11 @@ var reportCmd = &cobra.Command{
 	Use: "report [command]",
 }
 
-var reportAllCmd = &cobra.Command{
-	Use:   "all [command]",
-	Short: "run the all report",
+var reportDailyCmd = &cobra.Command{
+	Use:   "daily [command]",
+	Short: "run the daily report",
 	PreRun: func(cmd *cobra.Command, args []string) {
-		_ = viper.BindPFlag("metrics", cmd.Flags().Lookup("metrics"))
+		_ = viper.BindPFlag("metric", cmd.Flags().Lookup("metric"))
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
@@ -52,7 +52,15 @@ var reportAllCmd = &cobra.Command{
 		}
 		defer db.Close()
 
-		if err = report.All(db, cmd.Flags()); err != nil {
+		s := store.NewStore(db)
+		ctx := context.Background()
+		metric, err := s.Metric.SelectOne(ctx, viper.GetString("metric"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
+			os.Exit(1)
+		}
+
+		if err = report.Daily(ctx, db, metric); err != nil {
 			fmt.Fprintf(os.Stderr, fmt.Sprintf("%v\n", err))
 			os.Exit(1)
 		}
@@ -148,11 +156,11 @@ var reportMonthlyCmd = &cobra.Command{
 	},
 }
 
-func initReportAllCmd() {
-	c := reportAllCmd
+func initReportDailyCmd() {
+	c := reportDailyCmd
 	f := c.Flags()
-	f.StringSlice("metrics", []string{}, "Metrics")
-	c.MarkFlagRequired("metrics")
+	f.String("metric", "", "Metric")
+	c.MarkFlagRequired("metric")
 	f.String("config-file", "", "")
 }
 
@@ -173,10 +181,10 @@ func initReportStreakCmd() {
 }
 
 func init() {
-	initReportAllCmd()
+	initReportDailyCmd()
 	initReportMonthlyCmd()
 	initReportStreakCmd()
-	reportCmd.AddCommand(reportAllCmd)
+	reportCmd.AddCommand(reportDailyCmd)
 	reportCmd.AddCommand(reportMonthlyCmd)
 	reportCmd.AddCommand(reportStreakCmd)
 	rootCmd.AddCommand(reportCmd)
