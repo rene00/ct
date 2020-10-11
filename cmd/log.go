@@ -80,7 +80,8 @@ EXAMPLES
 				// TODO: update getValueFromConsole to log an error type when no value is provided. This will allow ct to skip over the prompt when no value is submitted here.
 				value, _ := getValueFromConsole("", valueText)
 				if value != "" {
-					if err = s.Log.Create(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp}); err != nil {
+					_, err = s.Log.Create(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp})
+					if err != nil {
 						return fmt.Errorf("Failed to create log: %s", err)
 					}
 				}
@@ -122,6 +123,7 @@ EXAMPLES
 		_ = viper.BindPFlag("timestamp", cmd.Flags().Lookup("timestamp"))
 		_ = viper.BindPFlag("quiet", cmd.Flags().Lookup("quiet"))
 		_ = viper.BindPFlag("update", cmd.Flags().Lookup("update"))
+		_ = viper.BindPFlag("comment", cmd.Flags().Lookup("comment"))
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.NewConfig(cmd.Flags())
@@ -181,9 +183,15 @@ EXAMPLES
 			logFunc = s.Log.Upsert
 		}
 
-		err = logFunc(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp})
+		log, err = logFunc(ctx, &store.Log{MetricID: metric.MetricID, Value: value, Timestamp: timestamp})
 		if err != nil && !quiet {
 			return fmt.Errorf("Failed to create log: %s", err)
+		}
+
+		if viper.IsSet("comment") {
+			if err = s.LogComment.Upsert(ctx, log, viper.GetString("comment")); err != nil {
+				return fmt.Errorf("Failed to insert/update log comment: %s", err)
+			}
 		}
 
 		return nil
@@ -200,6 +208,7 @@ func initLogCreateCmd() {
 	f.Bool("quiet", false, "Dont print warnings")
 	f.String("timestamp", time.Now().Format("2006-01-02"), "The timestamp of the metric (format: YYYY-MM-DD)")
 	f.Bool("update", false, "Update an existing metric value logged for the same timestamp")
+	f.String("comment", "", "A log comment")
 }
 
 func initLogPromptCmd() {

@@ -12,8 +12,8 @@ import (
 
 // LogStorer manages metric logs.
 type LogStorer interface {
-	Create(context.Context, *Log) error
-	Upsert(context.Context, *Log) error
+	Create(context.Context, *Log) (*Log, error)
+	Upsert(context.Context, *Log) (*Log, error)
 	SelectOne(context.Context, int64, time.Time) (*Log, error)
 	SelectLimit(context.Context, int64) ([]Log, error)
 	SelectWithTimestamp(context.Context, int64, time.Time) ([]Log, error)
@@ -97,97 +97,132 @@ func (s LogStore) SelectWithTimestamp(ctx context.Context, metricID int64, ts ti
 }
 
 // Create creates a new log item.
-func (s LogStore) Create(ctx context.Context, o *Log) error {
+func (s LogStore) Create(ctx context.Context, log *Log) (*Log, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	var metricConfigDataType string
-	if err = tx.QueryRowContext(ctx, "SELECT val FROM config WHERE metric_id = ? AND opt = ?", o.MetricID, "data_type").Scan(&metricConfigDataType); err != nil {
-		return err
+	if err = tx.QueryRowContext(ctx, "SELECT val FROM config WHERE metric_id = ? AND opt = ?", log.MetricID, "data_type").Scan(&metricConfigDataType); err != nil {
+		return nil, err
 	}
 
 	switch metricConfigDataType {
 	case "int":
-		_, err := strconv.ParseInt(o.Value, 0, 0)
+		_, err := strconv.ParseInt(log.Value, 0, 0)
 		if err != nil {
-			return errors.New("Value not an int")
+			return nil, errors.New("Value not an int")
 		}
 	case "float":
-		_, err := strconv.ParseFloat(o.Value, 0)
+		_, err := strconv.ParseFloat(log.Value, 0)
 		if err != nil {
-			return errors.New("Value not a float")
+			return nil, errors.New("Value not a float")
 		}
 	case "bool":
-		value, err := getBoolFromValue(o.Value)
+		value, err := getBoolFromValue(log.Value)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		o.Value = value
+		log.Value = value
 	default:
-		return errors.New("Missing data_type for metric")
+		return nil, errors.New("Missing data_type for metric")
 	}
 
 	stmt, err := tx.PrepareContext(ctx, "INSERT INTO log (id, timestamp, metric_id, value) VALUES (NULL, ?, ?, ?)")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = stmt.ExecContext(ctx, o.Timestamp.Format("2006-01-02"), o.MetricID, o.Value)
+	res, err := stmt.ExecContext(ctx, log.Timestamp.Format("2006-01-02"), log.MetricID, log.Value)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	log.LogID, err = res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return log, nil
 }
 
 // Upsert inserts a new metric log or updates an existing log if it exists.
-func (s LogStore) Upsert(ctx context.Context, o *Log) error {
+func (s LogStore) Upsert(ctx context.Context, log *Log) (*Log, error) {
 	tx, err := s.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	var metricConfigDataType string
-	if err = tx.QueryRowContext(ctx, "SELECT val FROM config WHERE metric_id = ? AND opt = ?", o.MetricID, "data_type").Scan(&metricConfigDataType); err != nil {
-		return err
+	if err = tx.QueryRowContext(ctx, "SELECT val FROM config WHERE metric_id = ? AND opt = ?", log.MetricID, "data_type").Scan(&metricConfigDataType); err != nil {
+		return nil, err
 	}
 
 	switch metricConfigDataType {
 	case "int":
-		_, err := strconv.ParseInt(o.Value, 0, 0)
+		_, err := strconv.ParseInt(log.Value, 0, 0)
 		if err != nil {
-			return errors.New("Value not an int")
+			return nil, errors.New("Value not an int")
 		}
 	case "float":
-		_, err := strconv.ParseFloat(o.Value, 0)
+		_, err := strconv.ParseFloat(log.Value, 0)
 		if err != nil {
-			return errors.New("Value not a float")
+			return nil, errors.New("Value not a float")
 		}
 	case "bool":
-		value, err := getBoolFromValue(o.Value)
+		value, err := getBoolFromValue(log.Value)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		o.Value = value
+		log.Value = value
 	default:
-		return errors.New("Missing data_type for metric")
+		return nil, errors.New("Missing data_type for metric")
 	}
 
 	stmt, err := tx.PrepareContext(ctx, "INSERT INTO log (id, timestamp, metric_id, value) VALUES (NULL, ?, ?, ?) ON CONFLICT(metric_id, timestamp) DO UPDATE SET value = ?")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = stmt.ExecContext(ctx, o.Timestamp.Format("2006-01-02"), o.MetricID, o.Value, o.Value)
+	res, err := stmt.ExecContext(ctx, log.Timestamp.Format("2006-01-02"), log.MetricID, log.Value, log.Value)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit()
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	log.LogID, err = res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	// log.LogID will be 0 on UPDATE so do SELECT to get the ID and assign.
+	if log.LogID == 0 {
+		tx, err := s.DB.BeginTx(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		defer tx.Rollback()
+
+		err = tx.QueryRowContext(ctx, "SELECT id FROM log WHERE metric_id = ? AND timestamp = ?", log.MetricID, log.Timestamp.Format("2006-01-02")).Scan(&log.LogID)
+		if err != nil {
+			return nil, err
+		}
+		if err = tx.Commit(); err != nil {
+			return nil, err
+		}
+	}
+
+	return log, nil
 }
 
 // SelectLimit returns all log rows up to limit. A limit of 0 is no limit.

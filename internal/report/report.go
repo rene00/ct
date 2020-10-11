@@ -49,11 +49,12 @@ func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 
 	rows, err := tx.QueryContext(ctx, `
 	SELECT
+	id,
 	ROUND(value, 2),
 	STRFTIME("%Y-%m-%d", timestamp)
 	FROM log
 	WHERE metric_id = ?
-	ORDER BY timestamp
+	ORDER BY log.timestamp
 	ASC
 	`, metric.MetricID)
 	if err != nil {
@@ -61,15 +62,27 @@ func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Month", "Value"})
+	table.SetHeader([]string{"Month", "Value", "Comment"})
 
+	s := store.NewStore(db)
 	for rows.Next() {
+		var id int64
 		var value float64
 		var timestamp string
-		if err := rows.Scan(&value, &timestamp); err != nil {
+		if err := rows.Scan(&id, &value, &timestamp); err != nil {
 			return err
 		}
-		table.Append([]string{timestamp, strconv.FormatFloat(value, 'f', -1, 64)})
+
+		comment := ""
+		logComment, err := s.LogComment.SelectOne(ctx, id)
+		if err != nil && err != store.ErrNotFound {
+			return err
+		}
+		if err == nil {
+			comment = logComment.Comment
+		}
+
+		table.Append([]string{timestamp, strconv.FormatFloat(value, 'f', -1, 64), comment})
 	}
 
 	err = rows.Err()
