@@ -198,6 +198,100 @@ func MonthlyGauge(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 	return tx.Commit()
 }
 
+// WeeklyGauge generates the weekly report for gauge metrics.
+func WeeklyGauge(ctx context.Context, db *sql.DB, metric *store.Metric) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+	SELECT 
+	ROUND(AVG(value), 2) AS metric_average,
+	COUNT(1) AS metric_count,
+	STRFTIME("%Y-%W", log.timestamp) AS week
+	FROM log
+	WHERE log.timestamp >= DATE('now', '-1 year')
+	AND log.metric_id = ?
+	GROUP BY week
+	ORDER BY log.timestamp
+`, metric.MetricID)
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Week", "Average", "Count"})
+
+	for rows.Next() {
+		var avg float64
+		var count int
+		var week string
+		if err := rows.Scan(&avg, &count, &week); err != nil {
+			return err
+		}
+		table.Append([]string{week, strconv.FormatFloat(avg, 'f', -1, 64), strconv.Itoa(count)})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	table.Render()
+
+	return tx.Commit()
+}
+
+// WeeklyCounter generates the weekly report for counter metrics.
+func WeeklyCounter(ctx context.Context, db *sql.DB, metric *store.Metric) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+	SELECT 
+	ROUND(AVG(value), 2) AS metric_average,
+	ROUND(SUM(value), 2) AS metric_sum,
+	COUNT(1) AS metric_count,
+	STRFTIME("%Y-%W", log.timestamp) AS week
+	FROM log
+	WHERE log.timestamp >= DATE('now', '-1 year')
+	AND log.metric_id = ?
+	GROUP BY week
+	ORDER BY log.timestamp
+`, metric.MetricID)
+	if err != nil {
+		return err
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Week", "Average", "Sum", "Count"})
+
+	for rows.Next() {
+		var avg float64
+		var sum float64
+		var count int
+		var week string
+		if err := rows.Scan(&avg, &sum, &count, &week); err != nil {
+			return err
+		}
+		table.Append([]string{week, strconv.FormatFloat(avg, 'f', -1, 64), strconv.FormatFloat(sum, 'f', -1, 64), strconv.Itoa(count)})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	table.Render()
+
+	return tx.Commit()
+}
+
 // Streak prints the streak report.
 func Streak(db *sql.DB, metricName string) error {
 	sqlStmt := `

@@ -36,6 +36,11 @@ var initCmd = &cobra.Command{
 			DbFile string `json:"db_file"`
 		}{DbFile: dbFile})
 
+		configFilePath := usrCfg.ConfigFileUsed()
+		if _, err := os.Stat(configFilePath); err == nil {
+			fmt.Fprint(os.Stderr, fmt.Sprintf("Not clobbering config file %s.\n", configFilePath))
+			return err
+		}
 		if err := cfg.Save("ct"); err != nil {
 			return err
 		}
