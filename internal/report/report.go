@@ -6,9 +6,11 @@ import (
 	"database/sql"
 	"os"
 	"strconv"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/olekukonko/tablewriter"
+	"github.com/snabb/isoweek"
 )
 
 type reportDaily struct {
@@ -210,11 +212,13 @@ func WeeklyGauge(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 	SELECT 
 	ROUND(AVG(value), 2) AS metric_average,
 	COUNT(1) AS metric_count,
-	STRFTIME("%Y-%W", log.timestamp) AS week
+	STRFTIME("%Y-%W", log.timestamp) AS year_week,
+	CAST(STRFTIME("%Y", log.timestamp) AS INTEGER) AS year,
+	CAST(STRFTIME("%W", log.timestamp) AS INTEGER) AS week
 	FROM log
 	WHERE log.timestamp >= DATE('now', '-1 year')
 	AND log.metric_id = ?
-	GROUP BY week
+	GROUP BY year_week
 	ORDER BY log.timestamp
 `, metric.MetricID)
 	if err != nil {
@@ -227,11 +231,14 @@ func WeeklyGauge(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 	for rows.Next() {
 		var avg float64
 		var count int
-		var week string
-		if err := rows.Scan(&avg, &count, &week); err != nil {
+		var yearWeek string
+		var week int
+		var year int
+		if err := rows.Scan(&avg, &count, &yearWeek, &year, &week); err != nil {
 			return err
 		}
-		table.Append([]string{week, strconv.FormatFloat(avg, 'f', -1, 64), strconv.Itoa(count)})
+
+		table.Append([]string{isoweek.StartTime(year, week, time.UTC).Format("2006-01-02"), strconv.FormatFloat(avg, 'f', -1, 64), strconv.Itoa(count)})
 	}
 
 	err = rows.Err()
@@ -257,7 +264,9 @@ func WeeklyCounter(ctx context.Context, db *sql.DB, metric *store.Metric) error 
 	ROUND(AVG(value), 2) AS metric_average,
 	ROUND(SUM(value), 2) AS metric_sum,
 	COUNT(1) AS metric_count,
-	STRFTIME("%Y-%W", log.timestamp) AS week
+	STRFTIME("%Y-%W", log.timestamp) AS year_week,
+	CAST(STRFTIME("%Y", log.timestamp) AS INTEGER) AS year,
+	CAST(STRFTIME("%W", log.timestamp) AS INTEGER) AS week
 	FROM log
 	WHERE log.timestamp >= DATE('now', '-1 year')
 	AND log.metric_id = ?
@@ -275,11 +284,14 @@ func WeeklyCounter(ctx context.Context, db *sql.DB, metric *store.Metric) error 
 		var avg float64
 		var sum float64
 		var count int
-		var week string
-		if err := rows.Scan(&avg, &sum, &count, &week); err != nil {
+		var yearWeek string
+		var week int
+		var year int
+		if err := rows.Scan(&avg, &sum, &count, &yearWeek, &year, &week); err != nil {
 			return err
 		}
-		table.Append([]string{week, strconv.FormatFloat(avg, 'f', -1, 64), strconv.FormatFloat(sum, 'f', -1, 64), strconv.Itoa(count)})
+
+		table.Append([]string{isoweek.StartTime(year, week, time.UTC).Format("2006-01-02"), strconv.FormatFloat(avg, 'f', -1, 64), strconv.FormatFloat(sum, 'f', -1, 64), strconv.Itoa(count)})
 	}
 
 	err = rows.Err()

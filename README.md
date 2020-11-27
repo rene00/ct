@@ -35,22 +35,10 @@ Update an existing metric log:
 $ ct log create --metric-name weight --metric-valid 95 --timestamp 2020-01-22 
 ```
 
-Report on weight:
+Produce a monthly report on weight:
 
 ```bash
-$ ct report all --metrics weight
-+----------------------+--------+-------+
-|      TIMESTAMP       |  NAME  | VALUE |
-+----------------------+--------+-------+
-| 2020-01-22T00:00:00Z | weight |    90 |
-| 2020-01-23T00:00:00Z | weight |   100 |
-+----------------------+--------+-------+
-```
-
-Produce a monthly average report on weight:
-
-```bash
-$ ct report monthly-average --metrics weight
+$ ct report monthly --metric weight
 +---------+--------+-------+-------+
 |  MONTH  |  NAME  | VALUE | COUNT |
 +---------+--------+-------+-------+
