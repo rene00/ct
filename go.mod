@@ -1,6 +1,6 @@
 module ct
 
-go 1.12
+go 1.16
 
 require (
 	github.com/Microsoft/hcsshim v0.8.9 // indirect
