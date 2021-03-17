@@ -9,6 +9,7 @@ export GO111MODULE=on
 all: clean build
 
 ct:
+	find .
 	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) ./cmd/ct
 
 .PHONY: build
