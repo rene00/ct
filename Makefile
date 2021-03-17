@@ -55,8 +55,8 @@ $(GOBIN)/gobump:
 
 .PHONY: lint
 lint: $(GOBIN)/golint
-	go vet .
-	golint -set_exit_status . cmd config internal/...
+	go vet ct/...
+	golint -set_exit_status cmd config internal/...
 
 .PHONY: upload
 upload: $(GOBIN)/ghr

@@ -48,7 +48,7 @@ var configureCmd = &cobra.Command{
 
 		valueText := viper.GetString("value-text")
 		if valueText != "" {
-			config := &store.Config{metric.MetricID, "value_text", valueText}
+			config := store.NewConfig(metric.MetricID, "value_text", valueText)
 			if err := s.Config.Upsert(ctx, config); err != nil {
 				return err
 			}
@@ -56,7 +56,7 @@ var configureCmd = &cobra.Command{
 
 		dataType := viper.GetString("data-type")
 		if dataType != "" {
-			config := &store.Config{metric.MetricID, "data_type", dataType}
+			config := store.NewConfig(metric.MetricID, "data_type", dataType)
 			if ok := config.IsDataTypeSupported(); !ok {
 				return fmt.Errorf("Data type not supported")
 			}
@@ -67,7 +67,7 @@ var configureCmd = &cobra.Command{
 
 		metricType := viper.GetString("metric-type")
 		if metricType != "" {
-			config := &store.Config{metric.MetricID, "metric_type", metricType}
+			config := store.NewConfig(metric.MetricID, "metric_type", metricType)
 			if ok := config.IsMetricTypeSupported(); !ok {
 				return fmt.Errorf("Metric type not supported")
 			}
