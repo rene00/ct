@@ -26,7 +26,7 @@ clean:
 
 .PHONY: install
 install: bin-data
-	go install -ldflags=$(BUILD_LDFLAGS) .
+	go install -ldflags=$(BUILD_LDFLAGS) ./cmd/ct
 
 .PHONY: test
 test: clean build
