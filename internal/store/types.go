@@ -23,6 +23,11 @@ type Config struct {
 	Val      string `json:"val" db:"val"`
 }
 
+// NewConfig creates a Config.
+func NewConfig(metricID int64, opt, val string) *Config {
+	return &Config{MetricID: metricID, Opt: opt, Val: val}
+}
+
 // LogComment is a log comment.
 type LogComment struct {
 	LogID   int64  `json:"log_id" db:"log_id"`

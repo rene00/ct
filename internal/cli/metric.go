@@ -1,4 +1,4 @@
-package cmd
+package cli
 
 import (
 	"context"
@@ -141,7 +141,7 @@ var metricCreateCmd = &cobra.Command{
 			return err
 		}
 
-		config := &store.Config{metric.MetricID, "data_type", viper.GetString("data-type")}
+		config := store.NewConfig(metric.MetricID, "data_type", viper.GetString("data-type"))
 		if ok := config.IsDataTypeSupported(); !ok {
 			return fmt.Errorf("Data type not supported: %s", config.Val)
 		}
@@ -149,7 +149,7 @@ var metricCreateCmd = &cobra.Command{
 			return err
 		}
 
-		config = &store.Config{metric.MetricID, "metric_type", viper.GetString("metric-type")}
+		config = store.NewConfig(metric.MetricID, "metric_type", viper.GetString("metric-type"))
 		if ok := config.IsMetricTypeSupported(); !ok {
 			return fmt.Errorf("Metric type not supported: %s", config.Val)
 		}
@@ -159,7 +159,8 @@ var metricCreateCmd = &cobra.Command{
 
 		valueText := viper.GetString("value-text")
 		if valueText != "" {
-			if err := s.Config.Upsert(ctx, &store.Config{metric.MetricID, "value_text", valueText}); err != nil {
+			config = store.NewConfig(metric.MetricID, "value_text", valueText)
+			if err := s.Config.Upsert(ctx, config); err != nil {
 				return err
 			}
 		}

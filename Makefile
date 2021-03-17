@@ -8,9 +8,11 @@ export GO111MODULE=on
 .PHONY: all
 all: clean build
 
+ct:
+	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) ./cmd/ct
+
 .PHONY: build
-build: bin-data
-	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) .
+build: bin-data ct
 
 $(GOBIN)/go-bindata:
 	cd && go get github.com/go-bindata/go-bindata/...
@@ -25,8 +27,8 @@ clean:
 	go clean
 
 .PHONY: install
-install: bin-data
-	go install -ldflags=$(BUILD_LDFLAGS) .
+install: build
+	mv -f ./ct $(GOBIN)/ct
 
 .PHONY: test
 test: clean build
@@ -48,15 +50,15 @@ cross: $(GOBIN)/goxz
 
 PHONY: show-version
 show-version: $(GOBIN)/gobump
-	@gobump show -r .
+	@gobump show -r cmd/ct
 
 $(GOBIN)/gobump:
 	@cd && go get github.com/x-motemen/gobump/cmd/gobump
 
 .PHONY: lint
 lint: $(GOBIN)/golint
-	go vet .
-	golint -set_exit_status . cmd config internal/...
+	go vet ct/...
+	golint -set_exit_status internal/...
 
 .PHONY: upload
 upload: $(GOBIN)/ghr
@@ -73,7 +75,7 @@ endif
 ifneq ($(shell git rev-parse --abbrev-ref HEAD),master)
 	$(error current branch is not master)
 endif
-	@gobump up -w .
+	@gobump up -w cmd/ct
 	git commit -am "bump up version to $(VERSION)"
 	git tag "v$(VERSION)"
 	git push origin master

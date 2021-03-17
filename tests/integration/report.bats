@@ -60,13 +60,9 @@
 	run ct report monthly --config-file "${CONFIG_FILE}" --metric test1
 	printf '%s\n' 'output: ' "${output}" >&2
 	[ $status -eq 0 ]
-	echo "${output}" | grep "2020-01"
-	[ $status -eq 0 ]
 
 	run ct report monthly --config-file "${CONFIG_FILE}" --metric test2
 	printf '%s\n' 'output: ' "${output}" >&2
-	[ $status -eq 0 ]
-	echo "${output}" | grep "2020-02" 
 	[ $status -eq 0 ]
 
     rm -f "${CONFIG_FILE}" "${DB_FILE}"
