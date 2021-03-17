@@ -10,7 +10,7 @@ all: clean build
 
 .PHONY: build
 build: bin-data
-	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) .
+	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) cmd/ct/main.go
 
 $(GOBIN)/go-bindata:
 	cd && go get github.com/go-bindata/go-bindata/...
