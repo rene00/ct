@@ -51,7 +51,7 @@ cross: $(GOBIN)/goxz
 
 PHONY: show-version
 show-version: $(GOBIN)/gobump
-	@gobump show -r .
+	@gobump show -r cmd/ct
 
 $(GOBIN)/gobump:
 	@cd && go get github.com/x-motemen/gobump/cmd/gobump
@@ -76,7 +76,7 @@ endif
 ifneq ($(shell git rev-parse --abbrev-ref HEAD),master)
 	$(error current branch is not master)
 endif
-	@gobump up -w .
+	@gobump up -w cmd/ct
 	git commit -am "bump up version to $(VERSION)"
 	git tag "v$(VERSION)"
 	git push origin master
