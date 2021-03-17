@@ -8,9 +8,11 @@ export GO111MODULE=on
 .PHONY: all
 all: clean build
 
+ct:
+	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) ./cmd/ct
+
 .PHONY: build
-build: bin-data
-	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) cmd/ct/main.go
+build: bin-data ct
 
 $(GOBIN)/go-bindata:
 	cd && go get github.com/go-bindata/go-bindata/...
@@ -25,8 +27,8 @@ clean:
 	go clean
 
 .PHONY: install
-install: bin-data
-	go install -ldflags=$(BUILD_LDFLAGS) ./cmd/ct
+install: build
+	mv -f ./ct $(GOBIN)/ct
 
 .PHONY: test
 test: clean build
@@ -56,7 +58,6 @@ $(GOBIN)/gobump:
 .PHONY: lint
 lint: $(GOBIN)/golint
 	go vet ct/...
-	#golint -set_exit_status cmd/... config internal/...
 	golint -set_exit_status internal/...
 	golint -set_exit_status cmd/...
 
