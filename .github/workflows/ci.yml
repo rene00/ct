@@ -20,11 +20,11 @@ jobs:
       with:
         go-version: '1.16.2'
 
-    - name: lint
+    - name: run make lint
       run: make lint
 
-  unit-tests:
-    name: unit tests
+  tests:
+    name: tests
     runs-on: ubuntu-latest
 
     steps:
@@ -35,30 +35,5 @@ jobs:
       with:
         go-version: '1.16.2'
 
-    - name: unit tests
+    - name: run make tests
       run: make test
-
-  integration-tests:
-    name: integration tests
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: setup go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.16.2'
-
-    - name: set env for go
-      run: |
-        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-
-    - name: install
-      run: make install
-
-    - name: install bats
-      run: sudo npm install -g bats
-
-    - name: integration tests
-      run: make integration-tests

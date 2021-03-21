@@ -6,7 +6,6 @@ import (
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 
-	"ct/config"
 	"ct/internal/store"
 	"database/sql"
 
@@ -14,84 +13,77 @@ import (
 	"github.com/spf13/viper"
 )
 
-var configureCmd = &cobra.Command{
-	Use: "configure [command]",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		_ = viper.BindPFlag("config-file", cmd.Flags().Lookup("config-file"))
-		_ = viper.BindPFlag("metric", cmd.Flags().Lookup("metric"))
-		_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
-		_ = viper.BindPFlag("value-text", cmd.Flags().Lookup("value-text"))
-		_ = viper.BindPFlag("metric-type", cmd.Flags().Lookup("metric-type"))
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.NewConfig(cmd.Flags())
-		if err != nil {
-			return err
-		}
+func configureCmd(cli *cli) *cobra.Command {
+	var flags struct {
+		Metric     string
+		DataType   string
+		ValueText  string
+		MetricType string
+	}
+	var cmd = &cobra.Command{
+		Use: "configure",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
+			_ = viper.BindPFlag("value-text", cmd.Flags().Lookup("value-text"))
+			_ = viper.BindPFlag("metric-type", cmd.Flags().Lookup("metric-type"))
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("Missing metric")
+			}
+			m := args[0]
 
-		db, err := sql.Open("sqlite3", cfg.UserViperConfig.GetString("ct.db_file"))
-		if err != nil {
-			return err
-		}
-		defer db.Close()
-
-		s := store.NewStore(db)
-
-		ctx := context.Background()
-		metric, err := s.Metric.SelectOne(ctx, viper.GetString("metric"))
-		if err != nil && err != store.ErrNotFound {
-			return err
-		}
-		if err != nil && err == store.ErrNotFound {
-			return fmt.Errorf("Metric not found: %s", viper.GetString("metric"))
-		}
-
-		valueText := viper.GetString("value-text")
-		if valueText != "" {
-			config := store.NewConfig(metric.MetricID, "value_text", valueText)
-			if err := s.Config.Upsert(ctx, config); err != nil {
+			db, err := sql.Open("sqlite3", cli.config.DBFile)
+			if err != nil {
 				return err
 			}
-		}
+			defer db.Close()
 
-		dataType := viper.GetString("data-type")
-		if dataType != "" {
-			config := store.NewConfig(metric.MetricID, "data_type", dataType)
-			if ok := config.IsDataTypeSupported(); !ok {
-				return fmt.Errorf("Data type not supported")
-			}
-			if err := s.Config.Upsert(ctx, config); err != nil {
+			s := store.NewStore(db)
+
+			ctx := context.Background()
+			metric, err := s.Metric.SelectOne(ctx, m)
+			if err != nil && err != store.ErrNotFound {
 				return err
 			}
-		}
-
-		metricType := viper.GetString("metric-type")
-		if metricType != "" {
-			config := store.NewConfig(metric.MetricID, "metric_type", metricType)
-			if ok := config.IsMetricTypeSupported(); !ok {
-				return fmt.Errorf("Metric type not supported")
+			if err != nil && err == store.ErrNotFound {
+				return fmt.Errorf("Metric not found: %s", m)
 			}
-			if err := s.Config.Upsert(ctx, config); err != nil {
-				return err
+
+			if flags.ValueText != "" {
+				config := store.NewConfig(metric.MetricID, "value_text", flags.ValueText)
+				if err := s.Config.Upsert(ctx, config); err != nil {
+					return err
+				}
 			}
-		}
 
-		return nil
-	},
-}
+			if flags.DataType != "" {
+				config := store.NewConfig(metric.MetricID, "data_type", flags.DataType)
+				if ok := config.IsDataTypeSupported(); !ok {
+					return fmt.Errorf("Data type not supported")
+				}
+				if err := s.Config.Upsert(ctx, config); err != nil {
+					return err
+				}
+			}
 
-func initConfigureCmd() {
-	c := configureCmd
-	f := c.Flags()
-	f.String("config-file", "", "Config file")
-	f.String("metric", "", "Metric")
-	c.MarkFlagRequired("metric")
-	f.String("data-type", "", "Metric Data Type")
-	f.String("value-text", "", "Metric Value Text")
-	f.String("metric-type", "", "Metric Type")
-}
+			if flags.MetricType != "" {
+				config := store.NewConfig(metric.MetricID, "metric_type", flags.MetricType)
+				if ok := config.IsMetricTypeSupported(); !ok {
+					return fmt.Errorf("Metric type not supported")
+				}
+				if err := s.Config.Upsert(ctx, config); err != nil {
+					return err
+				}
+			}
 
-func init() {
-	initConfigureCmd()
-	rootCmd.AddCommand(configureCmd)
+			return nil
+		},
+	}
+
+	cmd.Flags().StringVar(&flags.DataType, "data-type", "", "Metric data type")
+	cmd.Flags().StringVar(&flags.ValueText, "value-text", "", "Metric value text")
+	cmd.Flags().StringVar(&flags.MetricType, "metric-type", "", "Metric type")
+
+	return cmd
 }

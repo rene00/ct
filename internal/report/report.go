@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
@@ -42,10 +43,10 @@ type reportMonth struct {
 }
 
 // Daily prints the daily report.
-func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
+func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) (string, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer tx.Rollback()
 
@@ -60,10 +61,11 @@ func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 	ASC
 	`, metric.MetricID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
+	tableString := &strings.Builder{}
+	table := tablewriter.NewWriter(tableString)
 	table.SetHeader([]string{"Month", "Value", "Comment"})
 
 	s := store.NewStore(db)
@@ -72,13 +74,13 @@ func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 		var value float64
 		var timestamp string
 		if err := rows.Scan(&id, &value, &timestamp); err != nil {
-			return err
+			return "", err
 		}
 
 		comment := ""
 		logComment, err := s.LogComment.SelectOne(ctx, id)
 		if err != nil && err != store.ErrNotFound {
-			return err
+			return "", err
 		}
 		if err == nil {
 			comment = logComment.Comment
@@ -89,12 +91,12 @@ func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) error {
 
 	err = rows.Err()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	table.Render()
 
-	return tx.Commit()
+	return tableString.String(), tx.Commit()
 }
 
 func stringInSlice(s string, sl []string) bool {

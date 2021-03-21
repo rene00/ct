@@ -6,13 +6,13 @@ GOBIN ?= $(shell go env GOPATH)/bin
 export GO111MODULE=on
 
 .PHONY: all
-all: clean build
+all: build
 
 ct:
 	CGO_ENABLED=1 go build -ldflags=$(BUILD_LDFLAGS) -o $(BIN) ./cmd/ct
 
 .PHONY: build
-build: bin-data ct
+build: clean bin-data ct
 
 $(GOBIN)/go-bindata:
 	cd && go get github.com/go-bindata/go-bindata/...
@@ -33,10 +33,6 @@ install: build
 .PHONY: test
 test: clean build
 	go test -cover ./...
-
-.PHONY: integration-tests
-integration-tests: clean install
-	bats -t tests/integration/*.bats
 
 $(GOBIN)/golint:
 	cd && go get golang.org/x/lint/golint
