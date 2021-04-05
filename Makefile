@@ -42,7 +42,7 @@ $(GOBIN)/goxz:
 
 .PHONY: cross
 cross: $(GOBIN)/goxz
-	goxz -n $(BIN) -pv=v$(VERSION) -build-ldflags=$(BUILD_LDFLAGS) .
+	goxz -C cmd/ct -n $(BIN) -pv=v$(VERSION) -build-ldflags=$(BUILD_LDFLAGS) .
 
 PHONY: show-version
 show-version: $(GOBIN)/gobump
