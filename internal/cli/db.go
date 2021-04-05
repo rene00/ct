@@ -1,54 +1,43 @@
 package cli
 
 import (
-	"ct/config"
 	"ct/db/migrations"
 	"fmt"
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var dbCmd = &cobra.Command{
-	Use: "db [command]",
+func dbCmd(cli *cli) *cobra.Command {
+	var cmd = &cobra.Command{
+		Use: "db",
+	}
+
+	cmd.AddCommand(migrateDbCmd(cli))
+
+	return cmd
 }
 
-var dbMigrateCmd = &cobra.Command{
-	Use:   "migrate [command]",
-	Short: "run DB migrations",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		for _, flag := range []string{"run", "config-file"} {
-			_ = viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
-		}
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.NewConfig(cmd.Flags())
-		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("%v\n", err))
-			os.Exit(1)
-		}
-		if viper.IsSet("run") {
-			usrCfg := cfg.UserViperConfig
-			dbURL := fmt.Sprintf("sqlite3://%s", usrCfg.GetString("ct.db_file"))
-			if err = migrations.DoMigrateDb(dbURL); err != nil {
-				fmt.Fprint(os.Stderr, fmt.Sprintf("%v\n", err))
-				os.Exit(1)
+func migrateDbCmd(cli *cli) *cobra.Command {
+	var flags struct {
+		Run bool
+	}
+
+	var cmd = &cobra.Command{
+		Use:   "migrate",
+		Short: "run DB migrations",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			_ = viper.BindPFlag("run", cmd.Flags().Lookup("run"))
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if flags.Run {
+				if err := migrations.DoMigrateDb(fmt.Sprintf("sqlite3://%s", cli.config.DBFile)); err != nil {
+					return err
+				}
 			}
-		}
-		return nil
-	},
-}
-
-func initDbMigrateCmd() {
-	c := dbMigrateCmd
-	f := c.Flags()
-	f.Bool("run", false, "Run DB migrations")
-	f.String("config-file", "", "")
-}
-
-func init() {
-	initDbMigrateCmd()
-	dbCmd.AddCommand(dbMigrateCmd)
-	rootCmd.AddCommand(dbCmd)
+			return nil
+		},
+	}
+	cmd.Flags().BoolVar(&flags.Run, "run", false, "Run DB migrations")
+	return cmd
 }

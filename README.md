@@ -12,56 +12,56 @@ Initialise a ct config file and database:
 $ ct init
 ```
 
-Create a new metric called weight:
+Create a metric called _weight_:
 ```bash
-$ ct metric create --metric-name weight --data-type float
+$ ct metric create weight
 ```
 
-Create weight metric log:
+Create a log for the _weight_ metric:
 
 ```bash
-$ ct log create --metric-name weight --metric-value 100
+$ ct log create weight 100
 ```
 
-Create weight metric log with a timestamp:
+Create a log for the _weight_ metric with a timestamp that is in the past:
 
 ```bash
-$ ct log create --metric-name weight --metric-valid 90 --timestamp 2020-01-22 
+$ ct log create weight 90 --timestamp 2020-01-22 
 ```
 
-Update an existing metric log:
+Update an existing log:
 
 ```bash
-$ ct log create --metric-name weight --metric-valid 95 --timestamp 2020-01-22 
+$ ct log create weight 95 --timestamp 2020-01-22 
 ```
 
 Produce a monthly report on weight:
 
 ```bash
-$ ct report monthly --metric weight
-+---------+--------+-------+-------+
-|  MONTH  |  NAME  | VALUE | COUNT |
-+---------+--------+-------+-------+
-| 2020-01 | weight |    95 |     2 |
-+---------+--------+-------+-------+
+$ ct report monthly weight
++---------+---------+-------+
+|  MONTH  | AVERAGE | COUNT |
++---------+---------+-------+
+| 2020-01 |     95  |     2 |
++---------+---------+-------+
 ```
 
 Configure metric to be an integer:
 
 ```bash
-$ ct configure --metric weight --data-type int
+$ ct configure weight --data-type int
 ```
 
 Configure text to be shown when logging a metric without passing the value param:
 
 ```bash
-$ ct configure --metric weight --value-text "whats your weight?"
+$ ct configure weight --value-text "whats your weight?"
 ```
 
-Log a metric without passing the value param and be prompted with the value-text config option:
+Create a log for the _weight_ metric without passing the value param and be prompted with the _value-text_ config option:
 
 ```bash
-$ ct log --metric weight
+$ ct log weight
 whats your weight? 
 ```
 
@@ -71,12 +71,8 @@ Dump your data to json:
 $ ct dump
 ```
 
-Have ct ask for a log when you open your shell but stop asking once you add a value:
+Prompt for all metrics that dont have logs for today:
+
 ```bash
-$ ct configure --metric weight --value-text "whats your weight?"
+$ ct log prompt
 ```
-and then add to your `~/.bashrc`:
-```
-ct log --metric weight 2>/dev/null
-```
-ct will continue to ask `whats your weight?` everytime you open a new shell and will stop once you submit a metric. It will then ask again the next day.

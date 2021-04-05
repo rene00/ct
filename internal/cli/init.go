@@ -1,67 +1,44 @@
 package cli
 
 import (
-	"ct/config"
 	"ct/db/migrations"
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var initCmd = &cobra.Command{
-	Use: "init [command]",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		for _, flag := range []string{"db-file", "config-file"} {
-			_ = viper.BindPFlag(flag, cmd.Flags().Lookup(flag))
-		}
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.NewConfig(cmd.Flags())
-		if err != nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("%v\n", err))
-			return err
-		}
+func initCmd(cli *cli) *cobra.Command {
+	var flags struct {
+		DBFile string
+	}
 
-		dbFile := viper.GetString("db-file")
-		if dbFile == "" {
-			dbFile = filepath.Join(cfg.Dir, "ct.db")
-		}
+	var cmd = &cobra.Command{
+		Use: "init",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			_ = viper.BindPFlag("db-file", cmd.Flags().Lookup("db-file"))
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if _, err := os.Stat(cli.configFile); err == nil {
+				return fmt.Errorf("not clobbering config file %s", cli.configFile)
+			}
 
-		usrCfg := cfg.UserViperConfig
-		usrCfg.Set("ct", struct {
-			DbFile string `json:"db_file"`
-		}{DbFile: dbFile})
+			cli.config.DBFile = flags.DBFile
+			if err := cli.persistConfig(); err != nil {
+				return err
+			}
 
-		configFilePath := usrCfg.ConfigFileUsed()
-		if _, err := os.Stat(configFilePath); err == nil {
-			fmt.Fprint(os.Stderr, fmt.Sprintf("Not clobbering config file %s.\n", configFilePath))
-			return err
-		}
-		if err := cfg.Save("ct"); err != nil {
-			return err
-		}
+			if err := migrations.DoMigrateDb(fmt.Sprintf("sqlite3://%s", flags.DBFile)); err != nil {
+				return err
+			}
 
-		dbURL := fmt.Sprintf("sqlite3://%s", dbFile)
-		if err := migrations.DoMigrateDb(dbURL); err != nil {
-			return err
-		}
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&flags.DBFile, "db-file", path.Join(os.Getenv("HOME"), ".config", "ct", "ct.db"), "Database file path")
 
-		return nil
-	},
-}
-
-func initInitCmd() {
-	c := initCmd
-	f := c.Flags()
-	f.String("db-file", "", "DB file")
-	f.String("config-file", "", "Config file")
-}
-
-func init() {
-	initInitCmd()
-	rootCmd.AddCommand(initCmd)
+	return cmd
 }

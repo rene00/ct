@@ -15,10 +15,7 @@ jobs:
     - name: setup go
       uses: actions/setup-go@v2
       with:
-        go-version: '1.15.2'
-
-    - name: Add $GOPATH/bin to $PATH
-      run: echo "::add-path::$(go env GOPATH)/bin" 
+        go-version: '1.16.2'
 
     - name: cross build
       run: make cross
