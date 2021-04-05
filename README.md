@@ -32,7 +32,7 @@ $ ct log create weight 90 --timestamp 2020-01-22
 Update an existing log:
 
 ```bash
-$ ct log create weight 95 --timestamp 2020-01-22 
+$ ct log create weight 95 --timestamp 2020-01-22 --update
 ```
 
 Produce a monthly report on weight:
