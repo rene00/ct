@@ -2,7 +2,7 @@ package main
 
 import "ct/internal/cli"
 
-const version = "0.0.4"
+const version = "0.0.5"
 
 func main() {
 	// cli.SetVersion(version)
