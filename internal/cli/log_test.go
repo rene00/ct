@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"bytes"
 	"ct/internal/store"
 	"testing"
 	"time"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,6 +28,15 @@ func TestLogCreateCmdWithUpdate(t *testing.T) {
 	expect := []store.Log{store.Log{LogID: 1, MetricID: 1, Value: "2", Timestamp: now}}
 	d := dumpTest(t, cli)
 	require.Equal(t, expect, d.Logs)
+}
+
+func executeCmdTest(cmd *cobra.Command, args ...string) (c *cobra.Command, output string, err error) {
+	buf := new(bytes.Buffer)
+	cmd.SetOut(buf)
+	cmd.SetErr(buf)
+	cmd.SetArgs(args)
+	c, err = cmd.ExecuteC()
+	return c, buf.String(), err
 }
 
 func TestLogCreateCmd(t *testing.T) {
