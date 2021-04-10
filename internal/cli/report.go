@@ -6,6 +6,7 @@ import (
 	"ct/internal/store"
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3" //nolint
 	"github.com/spf13/cobra"
@@ -84,6 +85,10 @@ func streakReportCmd(cli *cli) *cobra.Command {
 }
 
 func monthlyReportCmd(cli *cli) *cobra.Command {
+	var flags struct {
+		StartDate string
+		EndDate   string
+	}
 	var cmd = &cobra.Command{
 		Use:   "monthly",
 		Short: "run the monthly report",
@@ -114,22 +119,40 @@ func monthlyReportCmd(cli *cli) *cobra.Command {
 				return fmt.Errorf("Missing config option metric_type: %s", metric.Name)
 			}
 
+			output := ""
+
+			start, err := time.Parse("2006-01-02", flags.StartDate)
+			if err != nil {
+				return err
+			}
+
+			end, err := time.Parse("2006-01-02", flags.EndDate)
+			if err != nil {
+				return err
+			}
+
 			switch configMetricType {
 			case "counter":
 				if err = report.MonthlyCounter(ctx, db, metric); err != nil {
 					return err
 				}
 			case "gauge":
-				if err = report.MonthlyGauge(ctx, db, metric); err != nil {
+				r := report.NewReport(db, metric)
+				output, err = r.MonthlyGuage(ctx, report.WithStartTimestamp(start), report.WithEndTimestamp(end))
+				if err != nil {
 					return err
 				}
 			default:
 				return fmt.Errorf("Unsupported reporting for metric type: %s", configMetricType)
 			}
 
+			cmd.Print(output)
 			return nil
 		},
 	}
+	cmd.Flags().StringVar(&flags.StartDate, "start", time.Now().AddDate(-1, 0, 0).Format("2006-01-02"), "Start date to report on")
+	cmd.Flags().StringVar(&flags.EndDate, "end", time.Now().Format("2006-01-02"), "End date to report on")
+
 	return cmd
 }
 

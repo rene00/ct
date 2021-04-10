@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"ct/internal/report"
 	"ct/internal/store"
 	"database/sql"
 	"fmt"
@@ -106,6 +107,7 @@ func createLogCmd(cli *cli) *cobra.Command {
 		Comment   string
 		Update    bool
 		Quiet     bool
+		Feedback  bool
 	}
 	var cmd = &cobra.Command{
 		Use:   "create [command]",
@@ -140,6 +142,7 @@ EXAMPLES
 			_ = viper.BindPFlag("quiet", cmd.Flags().Lookup("quiet"))
 			_ = viper.BindPFlag("update", cmd.Flags().Lookup("update"))
 			_ = viper.BindPFlag("comment", cmd.Flags().Lookup("comment"))
+			_ = viper.BindPFlag("feedback", cmd.Flags().Lookup("feedback"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) != 2 {
@@ -208,11 +211,32 @@ EXAMPLES
 				}
 			}
 
+			if flags.Feedback {
+				configMetricType, err := s.Config.SelectOne(ctx, metric.MetricID, "metric_type")
+				if err != nil && err != store.ErrNotFound {
+					return err
+				}
+				if err != nil && err == store.ErrNotFound {
+					return fmt.Errorf("Missing config option metric_type: %s", metric.Name)
+				}
+
+				switch configMetricType {
+				case "gauge":
+					r := report.NewReport(db, metric)
+					output, err := r.MonthlyGuage(ctx, report.WithStartTimestamp(time.Now().AddDate(0, -1, 0)))
+					if err != nil {
+						return err
+					}
+					cmd.Print(output)
+				}
+			}
+
 			return nil
 		},
 	}
 	cmd.Flags().BoolVar(&flags.Update, "update", false, "Update an existing log entry")
 	cmd.Flags().BoolVar(&flags.Quiet, "quiet", false, "Dont print warnings")
+	cmd.Flags().BoolVar(&flags.Feedback, "feedback", false, "Provide feedback when log created")
 	cmd.Flags().StringVar(&flags.Timestamp, "timestamp", time.Now().Format("2006-01-02"), "The timestamp of the metric (format: YYYY-MM-DD)")
 	cmd.Flags().StringVar(&flags.Comment, "comment", "", "A log comment")
 	return cmd
