@@ -21,18 +21,14 @@ func configureCmd(cli *cli) *cobra.Command {
 		MetricType string
 	}
 	var cmd = &cobra.Command{
-		Use: "configure",
+		Use:  "configure",
+		Args: cobra.ExactArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			_ = viper.BindPFlag("data-type", cmd.Flags().Lookup("data-type"))
 			_ = viper.BindPFlag("value-text", cmd.Flags().Lookup("value-text"))
 			_ = viper.BindPFlag("metric-type", cmd.Flags().Lookup("metric-type"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return fmt.Errorf("Missing metric")
-			}
-			m := args[0]
-
 			db, err := sql.Open("sqlite3", cli.config.DBFile)
 			if err != nil {
 				return err
@@ -42,6 +38,7 @@ func configureCmd(cli *cli) *cobra.Command {
 			s := store.NewStore(db)
 
 			ctx := context.Background()
+			m := args[0]
 			metric, err := s.Metric.SelectOne(ctx, m)
 			if err != nil && err != store.ErrNotFound {
 				return err
