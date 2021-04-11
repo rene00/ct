@@ -228,6 +228,13 @@ EXAMPLES
 						return err
 					}
 					cmd.Print(output)
+				case "counter":
+					r := report.NewReport(db, metric)
+					output, err := r.MonthlyCounter(ctx, report.WithStartTimestamp(time.Now().AddDate(0, -1, 0)))
+					if err != nil {
+						return err
+					}
+					cmd.Print(output)
 				}
 			}
 

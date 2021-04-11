@@ -131,13 +131,14 @@ func monthlyReportCmd(cli *cli) *cobra.Command {
 				return err
 			}
 
+			r := report.NewReport(db, metric)
 			switch configMetricType {
 			case "counter":
-				if err = report.MonthlyCounter(ctx, db, metric); err != nil {
+				output, err = r.MonthlyCounter(ctx, report.WithStartTimestamp(start), report.WithEndTimestamp(end))
+				if err != nil {
 					return err
 				}
 			case "gauge":
-				r := report.NewReport(db, metric)
 				output, err = r.MonthlyGuage(ctx, report.WithStartTimestamp(start), report.WithEndTimestamp(end))
 				if err != nil {
 					return err
