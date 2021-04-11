@@ -16,34 +16,6 @@ import (
 	"github.com/snabb/isoweek"
 )
 
-type reportDaily struct {
-	// The metric name.
-	MetricName string `json:"metric_name"`
-
-	// The monthly value.
-	MetricValue float64 `json:"metric_value"`
-
-	// The month.
-	Timestamp string `json:"month"`
-}
-
-type reportMonth struct {
-	// The metric name.
-	MetricName string `json:"metric_name"`
-
-	// The monthly average.
-	MetricAverage float64 `json:"metric_average"`
-
-	// The monthly sum.
-	MetricSum float64 `json:"metric_sum"`
-
-	// The count for the month.
-	Count int `json:"count"`
-
-	// The month.
-	Month string `json:"month"`
-}
-
 // Daily prints the daily report.
 func Daily(ctx context.Context, db *sql.DB, metric *store.Metric) (string, error) {
 	tx, err := db.BeginTx(ctx, nil)
