@@ -110,54 +110,6 @@ func stringInSlice(s string, sl []string) bool {
 	return false
 }
 
-// MonthlyCounter generates the monthly report for counter metrics.
-func MonthlyCounter(ctx context.Context, db *sql.DB, metric *store.Metric) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-	SELECT 
-	ROUND(AVG(value), 2) AS metric_average,
-	ROUND(SUM(value), 2) AS metric_sum,
-	COUNT(1) AS metric_count,
-	STRFTIME("%Y-%m", log.timestamp) AS month
-	FROM log
-	WHERE log.timestamp >= DATE('now', '-1 year')
-	AND log.metric_id = ?
-	GROUP BY month
-	ORDER BY log.timestamp
-`, metric.MetricID)
-	if err != nil {
-		return err
-	}
-
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Month", "Average", "Sum", "Count"})
-
-	for rows.Next() {
-		var avg float64
-		var sum float64
-		var count int
-		var month string
-		if err := rows.Scan(&avg, &sum, &count, &month); err != nil {
-			return err
-		}
-		table.Append([]string{month, strconv.FormatFloat(avg, 'f', -1, 64), strconv.FormatFloat(sum, 'f', -1, 64), strconv.Itoa(count)})
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return err
-	}
-
-	table.Render()
-
-	return tx.Commit()
-}
-
 // Report is the main struct for reports.
 type Report struct {
 	db     *sql.DB
@@ -211,10 +163,64 @@ func (q *QueryText) String() string {
 	return buf.String()
 }
 
+// MonthlyCounter generates the monthly report for counter metrics.
+func (r Report) MonthlyCounter(ctx context.Context, options ...QueryOption) (output string, err error) {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	q := NewQueryText(
+		"SELECT ROUND(AVG(value), 2) AS metric_average, ROUND(SUM(value), 2) AS metric_sum, COUNT(1) AS metric_count, STRFTIME(\"%Y-%m\", log.timestamp) AS month",
+		"FROM log",
+		"GROUP BY month",
+		"ORDER BY log.timestamp",
+		[]string{"log.metric_id = ?"},
+	)
+
+	for _, option := range options {
+		option(q)
+	}
+
+	if len(q.where) == 1 {
+		q.where = append(q.where, "log.timestamp >= DATE('now', '-1 year')")
+	}
+
+	rows, err := tx.QueryContext(ctx, fmt.Sprint(q), r.metric.MetricID)
+	if err != nil {
+		return "", err
+	}
+
+	tableString := &strings.Builder{}
+	table := tablewriter.NewWriter(tableString)
+	table.SetHeader([]string{"Month", "Average", "Sum", "Count"})
+
+	for rows.Next() {
+		var avg float64
+		var sum float64
+		var count int
+		var month string
+		if err := rows.Scan(&avg, &sum, &count, &month); err != nil {
+			return "", err
+		}
+		table.Append([]string{month, strconv.FormatFloat(avg, 'f', -1, 64), strconv.FormatFloat(sum, 'f', -1, 64), strconv.Itoa(count)})
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return "", err
+	}
+
+	tx.Commit()
+
+	table.Render()
+
+	return tableString.String(), nil
+}
+
 // MonthlyGuage generates the monthly report for gauge metrics.
 func (r Report) MonthlyGuage(ctx context.Context, options ...QueryOption) (output string, err error) {
-	tableString := &strings.Builder{}
-
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return "", err
@@ -242,6 +248,7 @@ func (r Report) MonthlyGuage(ctx context.Context, options ...QueryOption) (outpu
 		return "", err
 	}
 
+	tableString := &strings.Builder{}
 	table := tablewriter.NewWriter(tableString)
 	table.SetHeader([]string{"Month", "Average", "Count"})
 
