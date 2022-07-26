@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	_ "github.com/mattn/go-sqlite3" //nolint
+	"github.com/rivo/tview"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -20,6 +22,7 @@ func logCmd(cli *cli) *cobra.Command {
 
 	cmd.AddCommand(promptLogCmd(cli))
 	cmd.AddCommand(createLogCmd(cli))
+	cmd.AddCommand(editLogCmd(cli))
 
 	return cmd
 }
@@ -190,9 +193,12 @@ EXAMPLES
 				return err
 			}
 
-			value, err := getValueFromConsole(v, valueText)
-			if err != nil {
-				return err
+			value := v
+			if value != "" {
+				value, err = getValueFromConsole(v, valueText)
+				if err != nil {
+					return err
+				}
 			}
 
 			logFunc := s.Log.Create
@@ -246,5 +252,105 @@ EXAMPLES
 	cmd.Flags().BoolVar(&flags.Feedback, "feedback", false, "Provide feedback when log created")
 	cmd.Flags().StringVar(&flags.Timestamp, "timestamp", time.Now().Format("2006-01-02"), "The timestamp of the metric (format: YYYY-MM-DD)")
 	cmd.Flags().StringVar(&flags.Comment, "comment", "", "A log comment")
+	return cmd
+}
+
+func editLogCmd(cli *cli) *cobra.Command {
+	var flags struct { 
+		Timestamp string
+	}
+	var cmd = &cobra.Command{
+		Use:   "edit [command]",
+		Long: `
+Edit existing log entries
+
+EXAMPLES
+
+- Edit all logs for today
+
+  $ ct log edit
+`,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			_ = viper.BindPFlag("timestamp", cmd.Flags().Lookup("timestamp"))
+		},
+		RunE: func(cmd *cobra.Command, args []string) error {
+			db, err := sql.Open("sqlite3", cli.config.DBFile)
+			if err != nil {
+				return err
+			}
+			defer db.Close()
+
+			s := store.NewStore(db)
+			ctx := context.Background()
+
+
+			metrics, err := s.Metric.SelectLimit(ctx, 0)
+			if err != nil {
+				return err
+			}
+
+			timestamp, err := parseTimestamp(flags.Timestamp)
+			if err != nil {
+				return err
+			}
+
+			logs := []*store.Log{}
+			metricsToEdit := map[int64]store.Metric{}
+
+			for _, metric := range metrics {
+				log, err := s.Log.SelectOne(ctx, metric.MetricID, timestamp)
+				if err != nil && err != store.ErrNotFound {
+					return err
+				}
+				logs = append(logs, log)
+				metricsToEdit[metric.MetricID] = metric
+			}
+
+			for _, log := range logs {
+				metric, ok := metricsToEdit[log.MetricID]
+				if !ok {
+					return fmt.Errorf("Failed to find metric from log: %d", log.LogID)
+				}
+
+				valueText, err := s.Config.SelectOne(ctx, metric.MetricID, "value_text")
+				if err != nil && err != store.ErrNotFound {
+					return err
+				}
+
+				/*
+				value, err := getValueFromConsole(log.Value, valueText)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("%#v, %#v, %s, %s, %s\n", log, metric, valueText, log.Value, value)
+				*/
+
+				app := tview.NewApplication()
+				inputField := tview.NewInputField()
+				inputField.SetLabel(fmt.Sprintf("%s ", valueText))
+				inputField.SetFieldWidth(0)
+				inputField.SetLabelColor(tcell.ColorDefault)
+				inputField.SetFieldBackgroundColor(tcell.ColorDefault)
+				inputField.SetPlaceholder(log.Value)
+				inputField.SetPlaceholderStyle(tcell.StyleDefault)
+				inputField.SetDoneFunc(func(key tcell.Key) { app.Stop() })
+				if err := app.SetRoot(inputField, true).SetFocus(inputField).Run(); err != nil {
+					panic(err)
+				}
+
+				inputValue := inputField.GetText()
+				if log.Value == "0" && inputValue != "" && inputValue != log.Value {
+					log.Value = inputValue
+					_, err = s.Log.Upsert(cmd.Context(), log)
+					if err != nil {
+						return err
+					}
+				}
+			}
+
+			return nil
+		},
+	}
+	cmd.Flags().StringVar(&flags.Timestamp, "timestamp", time.Now().Format("2006-01-02"), "The timestamp of the logs to edit (format: YYYY-MM-DD)")
 	return cmd
 }

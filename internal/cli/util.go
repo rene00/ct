@@ -12,26 +12,26 @@ import (
 
 // Get value from user input.
 func getValueFromConsole(value, valueText string) (string, error) {
-	if value == "" {
-		reader := bufio.NewReader(os.Stdin)
-		if valueText == "" {
-			valueText = "Value:"
-		}
-		fmt.Print(fmt.Sprintf("%s ", valueText))
-		userInput, err := reader.ReadString('\n')
-		if err != nil {
-			return "", err
-		}
-		userInput = strings.TrimSuffix(userInput, "\n")
-		if err != nil {
-			return "", err
-		}
-		if userInput == "" {
-			return "", errors.New("No user input")
-		}
-		return userInput, nil
+	reader := bufio.NewReader(os.Stdin)
+	if valueText == "" {
+		valueText = "Value:"
 	}
-	return value, nil
+	fmt.Print(fmt.Sprintf("%s ", valueText, value))
+	userInput, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	userInput = strings.TrimSuffix(userInput, "\n")
+	if err != nil {
+		return "", err
+	}
+	if userInput == "" && value == "" {
+		return "", errors.New("No user input and value is not set")
+	}
+	if userInput == "" && value != "" {
+		userInput = value
+	}
+	return userInput, nil
 }
 
 // Check if string exists in slice.
