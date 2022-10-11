@@ -1,0 +1,12 @@
+---
+version: '3'
+tasks:
+  bin-data:
+    dir: db/migrations
+    cmds:
+      - go-bindata -o bindata.go -pkg migrations -ignore bindata.go .
+  sqlboiler:
+    cmds:
+      - migrate -source file://db/migrations -database sqlite3://ct.db up
+      - sqlboiler sqlite3
+      - rm -f ./ct.db
